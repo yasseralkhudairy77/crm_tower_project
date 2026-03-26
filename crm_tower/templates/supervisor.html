@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Supervisor | CRM Tower{% endblock %}
+{% block heading %}Dashboard Supervisor{% endblock %}
+{% block content %}
+<div class="ops-page">
+    <section class="ops-header">
+        <div>
+            <p class="prospects-kicker">Supervisor Monitoring Center</p>
+            <h2>{{ supervisor_data.title }}</h2>
+            <p class="prospects-subtitle">{{ supervisor_data.subtitle }}</p>
+        </div>
+    </section>
+
+    <section class="panel ops-filter-card">
+        <form class="ops-filter-toolbar report-filter-toolbar" method="get">
+            <div class="filter-field">
+                <label for="supervisor-period">Periode</label>
+                <select id="supervisor-period" name="period">
+                    <option value="daily" {% if period == 'daily' %}selected{% endif %}>Harian</option>
+                    <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Mingguan</option>
+                    <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Bulanan</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="supervisor-brand">Brand</label>
+                <select id="supervisor-brand" name="brand">
+                    <option value="">Semua brand</option>
+                    {% for option in brand_options %}
+                        <option value="{{ option }}" {% if selected_brand == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ops-filter-actions">
+                <button class="button button-primary" type="submit">Tampilkan Monitoring</button>
+                <a class="button button-secondary" href="{{ url_for('supervisor_page') }}">Reset</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="ops-metrics">
+        {% for card in supervisor_data.overview_cards %}
+            <article class="metric-card metric-card-compact">
+                <span>{{ card.label }}</span>
+                <strong>{{ card.value }}</strong>
+                <small>{{ card.meta }}</small>
+            </article>
+        {% endfor %}
+    </section>
+
+    <section class="dashboard-snapshot-grid">
+        <article class="panel dashboard-snapshot-card">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Ringkasan Kinerja</h2>
+                    <p>Snapshot beban kerja dan hasil utama CRM pada periode aktif.</p>
+                </div>
+            </div>
+            <div class="dashboard-mini-stats">
+                <div>
+                    <strong>{{ supervisor_data.performance_snapshot.new_members }}</strong>
+                    <span>Member baru</span>
+                </div>
+                <div>
+                    <strong>{{ supervisor_data.performance_snapshot.tasks_created }}</strong>
+                    <span>Tugas dibuat</span>
+                </div>
+                <div>
+                    <strong>{{ supervisor_data.performance_snapshot.tasks_done }}</strong>
+                    <span>Tugas selesai</span>
+                </div>
+                <div>
+                    <strong>{{ supervisor_data.performance_snapshot.issues_open }}</strong>
+                    <span>Keluhan aktif</span>
+                </div>
+                <div>
+                    <strong>{{ supervisor_data.performance_snapshot.obstacles_open }}</strong>
+                    <span>Kendala aktif</span>
+                </div>
+                <div>
+                    <strong>{{ supervisor_data.performance_snapshot.mentor_needed }}</strong>
+                    <span>Butuh mentor</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="panel dashboard-snapshot-card">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Catatan Supervisor</h2>
+                    <p>Poin singkat yang paling perlu dibahas saat evaluasi kerja CRM.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for item in supervisor_data.notes %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>Monitoring</strong>
+                            <span>{{ item }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid">
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Skor Kinerja PIC</h2>
+                    <p>Follow up, outcome positif, closing, dan beban tugas tiap PIC.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in supervisor_data.pic_scorecards %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.nama_pengguna }}</strong>
+                            <span>Follow up {{ row.followups_logged }} | Positif {{ row.positive_outcomes }} | Closing {{ row.closing_total }}</span>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-neutral">Task aktif {{ row.active_tasks }}</span>
+                            <span class="status-badge status-warning">Task terlambat {{ row.overdue_tasks }}</span>
+                            <span class="status-badge status-critical">Member overdue {{ row.overdue_members }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada data PIC aktif.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Tugas Prioritas</h2>
+                    <p>Daftar pekerjaan yang perlu dipastikan bergerak oleh supervisor.</p>
+                </div>
+                <a href="{{ url_for('tasks_page') }}">Buka tugas</a>
+            </div>
+            <div class="dashboard-list">
+                {% for row in supervisor_data.urgent_tasks %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.nama_member }}</strong>
+                            <span>{{ row.jenis_tugas }} | {{ row.nama_pengguna }}</span>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-{{ status_tone(row.prioritas) }}">{{ row.prioritas }}</span>
+                            <span class="status-badge status-{{ status_tone(row.status_tugas) }}">{{ row.status_tugas }}</span>
+                            <span class="status-badge status-neutral">{{ row.tanggal_jatuh_tempo }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Tidak ada tugas prioritas saat ini.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Member Perlu Perhatian</h2>
+                    <p>Member overdue atau masih terkendala yang perlu diarahkan cepat.</p>
+                </div>
+                <a href="{{ url_for('members_page', overdue_only='1', brand=selected_brand) if selected_brand else url_for('members_page', overdue_only='1') }}">Buka member</a>
+            </div>
+            <div class="dashboard-list">
+                {% for row in supervisor_data.overdue_members %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.nama_member }}</strong>
+                            <span>{{ row.nomor_whatsapp }} | {{ row.nama_pengguna or 'Belum Ada PIC' }}</span>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-{{ status_tone(row.status_member) }}">{{ row.status_member }}</span>
+                            <span class="status-badge status-{{ status_tone(row.status_keterlambatan) }}">{{ row.status_keterlambatan }}</span>
+                            <span class="status-badge status-neutral">{{ row.tanggal_tindak_lanjut_berikutnya or '-' }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Tidak ada member yang perlu perhatian khusus.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Antrean Follow Up</h2>
+                    <p>Prospek yang belum disentuh atau sudah jatuh tempo untuk dihubungi lagi.</p>
+                </div>
+                <a href="{{ url_for('orderonline_page', brand=selected_brand) if selected_brand else url_for('orderonline_page') }}">Buka peluang</a>
+            </div>
+            <div class="dashboard-list">
+                {% for row in supervisor_data.pending_followups %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.customer_name }}</strong>
+                            <span>{{ row.product }} | {{ row.nama_pengguna }}</span>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-{{ status_tone(row.followup_status) }}">{{ row.followup_status }}</span>
+                            <span class="status-badge status-neutral">{{ row.next_followup_date or '-' }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Tidak ada antrean follow up kritis saat ini.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Aktivitas Terbaru</h2>
+                    <p>Jejak kerja terbaru untuk memudahkan supervisor melihat progres nyata.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in supervisor_data.recent_activity %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.activity_type }} | {{ row.subject }}</strong>
+                            <span>{{ row.pic_name }} | {{ row.detail }}</span>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-neutral">{{ row.activity_at }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada aktivitas terbaru pada periode ini.</p>
+                {% endfor %}
+            </div>
+        </article>
+    </section>
+</div>
+{% endblock %}

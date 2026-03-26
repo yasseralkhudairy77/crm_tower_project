@@ -57,7 +57,7 @@ from .services.orderonline import (
 )
 from .services.purchases import add_purchase
 from .services.references import list_pengguna, list_program, list_sumber_data
-from .services.reports import build_period_report, build_report_dashboard, dashboard_summary, important_lists
+from .services.reports import build_period_report, build_report_dashboard, build_supervisor_dashboard, dashboard_summary, important_lists
 from .services.tasks import add_task, complete_task, list_tasks_overdue, list_tasks_today
 from .utils.helpers import today_str
 from .utils.validator import ValidationError
@@ -769,6 +769,23 @@ def create_app() -> Flask:
             "reports.html",
             report=report_text,
             report_data=report_data,
+            period=period,
+            selected_brand=brand,
+            brand_options=BRAND_OPTIONS,
+        )
+
+    @app.get("/supervisor")
+    def supervisor_page():
+        period = request.args.get("period", "weekly")
+        brand = request.args.get("brand", "").strip()
+        try:
+            supervisor_data = build_supervisor_dashboard(period, brand=brand)
+        except ValueError:
+            period = "weekly"
+            supervisor_data = build_supervisor_dashboard(period, brand=brand)
+        return render_template(
+            "supervisor.html",
+            supervisor_data=supervisor_data,
             period=period,
             selected_brand=brand,
             brand_options=BRAND_OPTIONS,

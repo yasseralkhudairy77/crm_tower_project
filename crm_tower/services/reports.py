@@ -427,3 +427,331 @@ def export_period_report(period: str, output_dir: Path) -> Path:
     filename = output_dir / f"laporan_{period}_{today_str()}.txt"
     filename.write_text(content, encoding="utf-8")
     return filename
+
+
+def build_supervisor_dashboard(period: str = "weekly", brand: str = "") -> dict:
+    refresh_overdue_flags()
+    refresh_task_statuses()
+    label = _period_label(period)
+    member_brand_clause, member_brand_params = _brand_member_clause("m", brand)
+    followup_brand_clause, followup_brand_params = _brand_followup_clause("oof", brand)
+    task_brand_clause, task_brand_params = _brand_member_clause("m", brand)
+
+    task_period_filter, task_period_params = _period_filter("t.dibuat_pada", period)
+    task_done_filter, task_done_params = _period_filter("t.tanggal_selesai", period)
+    issue_period_filter, issue_period_params = _period_filter("km.tanggal_masuk", period)
+    obstacle_period_filter, obstacle_period_params = _period_filter("km.tanggal_update", period)
+    followup_log_filter, followup_log_params = _period_filter("l.created_at", period)
+
+    overview_cards = [
+        {
+            "label": "Follow Up Hari Ini",
+            "value": fetchone(
+                f"SELECT COUNT(*) AS total FROM member m WHERE m.aktif = 1 AND m.tanggal_tindak_lanjut_berikutnya = ?{member_brand_clause}",
+                (today_str(),) + member_brand_params,
+            )["total"],
+            "meta": "Member yang jatuh tempo follow up hari ini",
+        },
+        {
+            "label": "Member Terlambat",
+            "value": fetchone(
+                f"SELECT COUNT(*) AS total FROM member m WHERE m.aktif = 1 AND m.status_keterlambatan = 'Terlambat'{member_brand_clause}",
+                member_brand_params,
+            )["total"],
+            "meta": "Perlu perhatian supervisor",
+        },
+        {
+            "label": "Tugas Hari Ini",
+            "value": fetchone(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM tugas_crm t
+                JOIN member m ON t.id_member = m.id_member
+                WHERE t.status_tugas <> 'Selesai' AND t.tanggal_jatuh_tempo = ?{task_brand_clause}
+                """,
+                (today_str(),) + task_brand_params,
+            )["total"],
+            "meta": "Task aktif jatuh tempo hari ini",
+        },
+        {
+            "label": "Tugas Terlambat",
+            "value": fetchone(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM tugas_crm t
+                JOIN member m ON t.id_member = m.id_member
+                WHERE t.status_tugas = 'Terlambat'{task_brand_clause}
+                """,
+                task_brand_params,
+            )["total"],
+            "meta": "Pekerjaan yang belum selesai tepat waktu",
+        },
+        {
+            "label": f"Kontak CRM {label}",
+            "value": fetchone(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM orderonline_followup_log l
+                JOIN orderonline_followup oof ON oof.id_import = l.id_import
+                WHERE {followup_log_filter}{followup_brand_clause}
+                """,
+                followup_log_params + followup_brand_params,
+            )["total"],
+            "meta": "Aktivitas follow up yang tercatat",
+        },
+        {
+            "label": f"Closing {label}",
+            "value": fetchone(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM orderonline_followup_log l
+                JOIN orderonline_followup oof ON oof.id_import = l.id_import
+                WHERE {followup_log_filter}{followup_brand_clause} AND l.outcome = 'Closing'
+                """,
+                followup_log_params + followup_brand_params,
+            )["total"],
+            "meta": "Closing after-sales pada periode ini",
+        },
+    ]
+
+    performance_snapshot = {
+        "new_members": fetchone(
+            f"SELECT COUNT(*) AS total FROM member m WHERE { _period_filter('m.dibuat_pada', period)[0] }{member_brand_clause}",
+            _period_filter("m.dibuat_pada", period)[1] + member_brand_params,
+        )["total"],
+        "tasks_created": fetchone(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM tugas_crm t
+            JOIN member m ON t.id_member = m.id_member
+            WHERE {task_period_filter}{task_brand_clause}
+            """,
+            task_period_params + task_brand_params,
+        )["total"],
+        "tasks_done": fetchone(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM tugas_crm t
+            JOIN member m ON t.id_member = m.id_member
+            WHERE t.status_tugas = 'Selesai' AND {task_done_filter}{task_brand_clause}
+            """,
+            task_done_params + task_brand_params,
+        )["total"],
+        "issues_new": fetchone(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM keluhan_member km
+            JOIN member m ON km.id_member = m.id_member
+            WHERE {issue_period_filter}{member_brand_clause}
+            """,
+            issue_period_params + member_brand_params,
+        )["total"],
+        "issues_open": fetchone(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM keluhan_member km
+            JOIN member m ON km.id_member = m.id_member
+            WHERE km.status_penanganan <> 'Selesai'{member_brand_clause}
+            """,
+            member_brand_params,
+        )["total"],
+        "obstacles_open": fetchone(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM kendala_member km
+            JOIN member m ON km.id_member = m.id_member
+            WHERE km.status_kendala <> 'Selesai'{member_brand_clause}
+            """,
+            member_brand_params,
+        )["total"],
+        "mentor_needed": fetchone(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM kendala_member km
+            JOIN member m ON km.id_member = m.id_member
+            WHERE km.status_kendala <> 'Selesai' AND km.perlu_bantuan_mentor = 1{member_brand_clause}
+            """,
+            member_brand_params,
+        )["total"],
+        "obstacles_updated": fetchone(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM kendala_member km
+            JOIN member m ON km.id_member = m.id_member
+            WHERE {obstacle_period_filter}{member_brand_clause}
+            """,
+            obstacle_period_params + member_brand_params,
+        )["total"],
+    }
+
+    pic_scorecards = fetchall(
+        f"""
+        SELECT
+            u.id_pengguna,
+            u.nama_pengguna,
+            (
+                SELECT COUNT(*)
+                FROM orderonline_followup_log l
+                JOIN orderonline_followup oof ON oof.id_import = l.id_import
+                WHERE l.created_by = u.id_pengguna
+                  AND {followup_log_filter}{followup_brand_clause}
+            ) AS followups_logged,
+            (
+                SELECT COUNT(*)
+                FROM orderonline_followup_log l
+                JOIN orderonline_followup oof ON oof.id_import = l.id_import
+                WHERE l.created_by = u.id_pengguna
+                  AND {followup_log_filter}{followup_brand_clause}
+                  AND l.outcome IN ('Respon Positif', 'Minta Info Lanjutan', 'Closing')
+            ) AS positive_outcomes,
+            (
+                SELECT COUNT(*)
+                FROM orderonline_followup_log l
+                JOIN orderonline_followup oof ON oof.id_import = l.id_import
+                WHERE l.created_by = u.id_pengguna
+                  AND {followup_log_filter}{followup_brand_clause}
+                  AND l.outcome = 'Closing'
+            ) AS closing_total,
+            (
+                SELECT COUNT(*)
+                FROM tugas_crm t
+                JOIN member m ON t.id_member = m.id_member
+                WHERE t.penanggung_jawab = u.id_pengguna
+                  AND t.status_tugas <> 'Selesai'{task_brand_clause}
+            ) AS active_tasks,
+            (
+                SELECT COUNT(*)
+                FROM tugas_crm t
+                JOIN member m ON t.id_member = m.id_member
+                WHERE t.penanggung_jawab = u.id_pengguna
+                  AND t.status_tugas = 'Terlambat'{task_brand_clause}
+            ) AS overdue_tasks,
+            (
+                SELECT COUNT(*)
+                FROM member m
+                WHERE m.penanggung_jawab = u.id_pengguna
+                  AND m.aktif = 1
+                  AND m.status_keterlambatan = 'Terlambat'{member_brand_clause}
+            ) AS overdue_members
+        FROM pengguna u
+        WHERE u.aktif = 1
+        ORDER BY u.nama_pengguna ASC
+        """,
+        followup_log_params + followup_brand_params
+        + followup_log_params + followup_brand_params
+        + followup_log_params + followup_brand_params
+        + task_brand_params
+        + task_brand_params
+        + member_brand_params,
+    )
+
+    urgent_tasks = fetchall(
+        f"""
+        SELECT t.id_tugas, t.jenis_tugas, t.prioritas, t.status_tugas, t.tanggal_jatuh_tempo, m.nama_member, u.nama_pengguna
+        FROM tugas_crm t
+        JOIN member m ON t.id_member = m.id_member
+        JOIN pengguna u ON t.penanggung_jawab = u.id_pengguna
+        WHERE t.status_tugas IN ('Belum Dikerjakan', 'Sedang Dikerjakan', 'Terlambat'){task_brand_clause}
+        ORDER BY
+            CASE t.status_tugas WHEN 'Terlambat' THEN 0 WHEN 'Sedang Dikerjakan' THEN 1 ELSE 2 END,
+            CASE t.prioritas WHEN 'Tinggi' THEN 0 WHEN 'Sedang' THEN 1 ELSE 2 END,
+            t.tanggal_jatuh_tempo ASC,
+            t.id_tugas DESC
+        LIMIT 8
+        """,
+        task_brand_params,
+    )
+    overdue_members = fetchall(
+        f"""
+        SELECT id_member, nama_member, nomor_whatsapp, status_member, tanggal_tindak_lanjut_berikutnya, status_keterlambatan, nama_pengguna
+        FROM (
+            SELECT m.id_member, m.nama_member, m.nomor_whatsapp, m.status_member, m.tanggal_tindak_lanjut_berikutnya, m.status_keterlambatan, u.nama_pengguna
+            FROM member m
+            LEFT JOIN pengguna u ON m.penanggung_jawab = u.id_pengguna
+            WHERE m.aktif = 1
+              AND (m.status_keterlambatan = 'Terlambat' OR m.status_member = 'Masih Terkendala'){member_brand_clause}
+        )
+        ORDER BY status_keterlambatan DESC, tanggal_tindak_lanjut_berikutnya ASC, id_member DESC
+        LIMIT 8
+        """,
+        member_brand_params,
+    )
+    pending_followups = fetchall(
+        f"""
+        SELECT oof.id_import, oof.customer_name, oof.phone, oof.product, oof.followup_status, oof.followup_result, oof.next_followup_date, COALESCE(u.nama_pengguna, 'Belum Ada PIC') AS nama_pengguna
+        FROM orderonline_followup oof
+        LEFT JOIN pengguna u ON oof.followup_by = u.id_pengguna
+        WHERE (
+            oof.followup_status = 'Belum Dihubungi'
+            OR (oof.next_followup_date IS NOT NULL AND oof.next_followup_date <= ?)
+        ){followup_brand_clause}
+        ORDER BY
+            CASE COALESCE(oof.followup_status, 'Belum Dihubungi')
+                WHEN 'Belum Dihubungi' THEN 0
+                WHEN 'Perlu Follow Up Lagi' THEN 1
+                WHEN 'Tertarik' THEN 2
+                ELSE 3
+            END,
+            COALESCE(oof.next_followup_date, substr(COALESCE(oof.paid_at_iso, oof.created_at_iso), 1, 10)) ASC,
+            oof.id_import DESC
+        LIMIT 8
+        """,
+        (today_str(),) + followup_brand_params,
+    )
+    recent_activity = fetchall(
+        f"""
+        SELECT activity_type, subject, pic_name, detail, activity_at
+        FROM (
+            SELECT 'Follow Up' AS activity_type, oof.customer_name AS subject, COALESCE(u.nama_pengguna, 'Belum Ada PIC') AS pic_name, COALESCE(l.outcome, l.action_type, 'Update') AS detail, l.created_at AS activity_at
+            FROM orderonline_followup_log l
+            JOIN orderonline_followup oof ON oof.id_import = l.id_import
+            LEFT JOIN pengguna u ON l.created_by = u.id_pengguna
+            WHERE {followup_log_filter}{followup_brand_clause}
+            UNION ALL
+            SELECT 'Tugas' AS activity_type, m.nama_member AS subject, COALESCE(u.nama_pengguna, 'Belum Ada PIC') AS pic_name, t.status_tugas AS detail, COALESCE(t.tanggal_selesai, t.dibuat_pada) AS activity_at
+            FROM tugas_crm t
+            JOIN member m ON t.id_member = m.id_member
+            LEFT JOIN pengguna u ON t.penanggung_jawab = u.id_pengguna
+            WHERE ({task_period_filter} OR {task_done_filter}){task_brand_clause}
+            UNION ALL
+            SELECT 'Kendala' AS activity_type, m.nama_member AS subject, COALESCE(u.nama_pengguna, 'Belum Ada PIC') AS pic_name, km.kategori_kendala AS detail, km.tanggal_update AS activity_at
+            FROM kendala_member km
+            JOIN member m ON km.id_member = m.id_member
+            LEFT JOIN pengguna u ON km.dicatat_oleh = u.id_pengguna
+            WHERE {obstacle_period_filter}{member_brand_clause}
+        )
+        ORDER BY activity_at DESC
+        LIMIT 12
+        """,
+        followup_log_params + followup_brand_params
+        + task_period_params + task_done_params + task_brand_params
+        + obstacle_period_params + member_brand_params,
+    )
+
+    supervision_notes = []
+    overdue_task_total = overview_cards[3]["value"]
+    overdue_member_total = overview_cards[1]["value"]
+    if overdue_task_total:
+        supervision_notes.append(f"Ada {overdue_task_total} tugas terlambat yang perlu dibahas supervisor.")
+    if overdue_member_total:
+        supervision_notes.append(f"Ada {overdue_member_total} member overdue atau masih terkendala yang perlu diprioritaskan.")
+    if performance_snapshot["mentor_needed"]:
+        supervision_notes.append(f"{performance_snapshot['mentor_needed']} kendala aktif sedang membutuhkan bantuan mentor.")
+    if not supervision_notes:
+        supervision_notes.append("Operasional CRM relatif stabil dan tidak ada indikator kritis yang menonjol saat ini.")
+
+    return {
+        "title": "Dashboard Monitoring Supervisor",
+        "subtitle": f"Pantau progres kerja CRM, beban follow up, dan kualitas penyelesaian masalah pada periode {label.lower()}.",
+        "period": period,
+        "brand": brand,
+        "generated_at": now_str(),
+        "overview_cards": overview_cards,
+        "performance_snapshot": performance_snapshot,
+        "pic_scorecards": pic_scorecards,
+        "urgent_tasks": urgent_tasks,
+        "overdue_members": overdue_members,
+        "pending_followups": pending_followups,
+        "recent_activity": recent_activity,
+        "notes": supervision_notes,
+    }
