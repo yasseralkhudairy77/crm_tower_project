@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Laporan | CRM Tower{% endblock %}
+{% block heading %}Laporan CRM{% endblock %}
+{% block content %}
+<div class="ops-page">
+    <section class="ops-header">
+        <div>
+            <p class="prospects-kicker">CRM KPI Report Center</p>
+            <h2>{{ report_data.title }}</h2>
+            <p class="prospects-subtitle">{{ report_data.subtitle }}</p>
+        </div>
+    </section>
+
+    <section class="panel ops-filter-card">
+        <form class="ops-filter-toolbar report-filter-toolbar" method="get">
+            <div class="filter-field">
+                <label for="report-period">Periode</label>
+                <select id="report-period" name="period">
+                    <option value="daily" {% if period == 'daily' %}selected{% endif %}>Harian</option>
+                    <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Mingguan</option>
+                    <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Bulanan</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="report-brand">Brand</label>
+                <select id="report-brand" name="brand">
+                    <option value="">Semua brand</option>
+                    {% for option in brand_options %}
+                        <option value="{{ option }}" {% if selected_brand == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ops-filter-actions">
+                <button class="button button-primary" type="submit">Tampilkan KPI</button>
+                <a class="button button-secondary" href="{{ url_for('reports_page') }}">Reset</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="ops-metrics">
+        {% for card in report_data.kpi_cards %}
+            <article class="metric-card metric-card-compact">
+                <span>{{ card.label }}</span>
+                <strong>{{ card.value }}</strong>
+                <small>{{ card.meta }}</small>
+            </article>
+        {% endfor %}
+    </section>
+
+    <section class="dashboard-snapshot-grid">
+        <article class="panel dashboard-snapshot-card">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Kesehatan CRM</h2>
+                    <p>Ringkasan isu dan kendala yang memengaruhi kualitas operasional.</p>
+                </div>
+            </div>
+            <div class="dashboard-mini-stats">
+                <div>
+                    <strong>{{ report_data.crm_health.issues_open }}</strong>
+                    <span>Keluhan terbuka</span>
+                </div>
+                <div>
+                    <strong>{{ report_data.crm_health.issues_resolved }}</strong>
+                    <span>Keluhan selesai</span>
+                </div>
+                <div>
+                    <strong>{{ report_data.crm_health.obstacles_open }}</strong>
+                    <span>Kendala terbuka</span>
+                </div>
+                <div>
+                    <strong>{{ report_data.crm_health.mentor_needed }}</strong>
+                    <span>Butuh mentor</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="panel dashboard-snapshot-card">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Insight Utama</h2>
+                    <p>Poin ringkas untuk evaluasi cepat periode ini.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for item in report_data.insights %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>Insight</strong>
+                            <span>{{ item }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid">
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Breakdown per Brand</h2>
+                    <p>Member aktif, prospek, keluhan aktif, dan kendala aktif per brand.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in report_data.brand_breakdown %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.brand }}</strong>
+                            <span>Member {{ row.member_count }} | Prospek {{ row.prospect_count }}</span>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-warning">Keluhan {{ row.issue_open }}</span>
+                            <span class="status-badge status-info">Kendala {{ row.obstacle_open }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada data breakdown brand.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Status Follow Up</h2>
+                    <p>Komposisi antrean peluang lanjutan berdasarkan status follow up.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in report_data.followup_status_breakdown %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.label }}</strong>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-{{ status_tone(row.label) }}">{{ row.total }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada data status follow up.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Jenis Keluhan</h2>
+                    <p>Kategori tiket yang paling sering muncul pada periode ini.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in report_data.issue_by_type %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.label }}</strong>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-neutral">{{ row.total }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada keluhan pada periode ini.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Kategori Kendala</h2>
+                    <p>Hambatan belajar atau praktik yang paling dominan.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in report_data.obstacle_by_category %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.label }}</strong>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-warning">{{ row.total }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada kendala pada periode ini.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Kinerja per PIC</h2>
+                    <p>Ringkasan kontribusi PIC pada member baru, keluhan, dan kendala.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in report_data.pic_breakdown %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.label }}</strong>
+                            <span>Member baru {{ row.new_members }} | Keluhan {{ row.issues }} | Kendala {{ row.obstacles }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada data PIC.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="panel dashboard-panel">
+            <div class="list-report-bar">
+                <div>
+                    <h2>Aktivitas Terbaru</h2>
+                    <p>Jejak follow up, keluhan, dan kendala terbaru pada periode ini.</p>
+                </div>
+            </div>
+            <div class="dashboard-list">
+                {% for row in report_data.recent_activity %}
+                    <div class="dashboard-list-item">
+                        <div class="dashboard-list-main">
+                            <strong>{{ row.activity_type }} | {{ row.subject }}</strong>
+                            <span>{{ row.brand }} | {{ row.detail }}</span>
+                        </div>
+                        <div class="dashboard-list-meta">
+                            <span class="status-badge status-neutral">{{ row.activity_at }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="empty">Belum ada aktivitas terbaru pada periode ini.</p>
+                {% endfor %}
+            </div>
+        </article>
+    </section>
+
+    <section class="panel">
+        <div class="list-report-bar">
+            <div>
+                <h2>Versi Teks Laporan</h2>
+                <p>Ringkasan teks tetap tersedia untuk kebutuhan dokumentasi atau copy cepat.</p>
+            </div>
+        </div>
+        <pre class="report-block">{{ report }}</pre>
+    </section>
+</div>
+{% endblock %}

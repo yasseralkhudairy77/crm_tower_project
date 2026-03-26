@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Backup | CRM Tower{% endblock %}
+{% block heading %}Backup Database{% endblock %}
+{% block content %}
+<div class="backup-page">
+    <section class="backup-header">
+        <div>
+            <p class="backup-kicker">Operasional CRM</p>
+            <h2>Backup Database</h2>
+            <p class="backup-subtitle">Kelola folder backup, jalankan salinan manual kapan saja, dan pantau riwayat backup database CRM dalam satu control panel yang rapi.</p>
+        </div>
+    </section>
+
+    <section class="backup-metrics">
+        <article class="backup-card backup-card-status">
+            <div class="backup-card-top">
+                <span class="backup-card-icon" aria-hidden="true">S</span>
+                <span class="backup-card-label">Status</span>
+            </div>
+            <strong>{{ "Aktif" if backup.configured else "Belum Set" }}</strong>
+            <small>{{ "Folder backup sudah siap dipakai" if backup.configured else "Konfigurasi folder backup masih diperlukan" }}</small>
+        </article>
+        <article class="backup-card backup-card-count">
+            <div class="backup-card-top">
+                <span class="backup-card-icon" aria-hidden="true">B</span>
+                <span class="backup-card-label">Jumlah Backup</span>
+            </div>
+            <strong>{{ backup.backup_count }}</strong>
+            <small>Riwayat file backup yang terdeteksi saat ini.</small>
+        </article>
+        <article class="backup-card backup-card-latest">
+            <div class="backup-card-top">
+                <span class="backup-card-icon" aria-hidden="true">L</span>
+                <span class="backup-card-label">Backup Terakhir</span>
+            </div>
+            <strong>{{ "Tersedia" if backup.latest_backup else "Belum Ada" }}</strong>
+            <small>{{ backup.latest_backup if backup.latest_backup else "Belum ada file backup terbaru yang tercatat." }}</small>
+        </article>
+    </section>
+
+    <section class="backup-main-grid">
+        <article class="panel backup-panel">
+            <div class="backup-panel-header">
+                <div>
+                    <h3>Folder Backup</h3>
+                    <p>Tentukan folder Google Drive atau folder lokal yang akan dipakai untuk penyimpanan backup otomatis dan manual.</p>
+                </div>
+            </div>
+            <form class="backup-config-form" method="post">
+                <input type="hidden" name="action" value="save">
+                <label class="backup-field">
+                    <span>Folder Backup</span>
+                    <input name="backup_dir" value="{{ backup.backup_dir }}" placeholder="Contoh: C:\Users\user\Google Drive\CRM Backup">
+                </label>
+                <div class="backup-form-actions">
+                    <button class="button button-secondary" type="submit">Simpan Folder Backup</button>
+                </div>
+            </form>
+        </article>
+
+        <article class="panel backup-panel">
+            <div class="backup-panel-header">
+                <div>
+                    <h3>Backup Manual</h3>
+                    <p>Buat salinan database terbaru kapan saja untuk memastikan operasional CRM tetap aman dan terdokumentasi.</p>
+                </div>
+            </div>
+            <form class="backup-run-form" method="post">
+                <input type="hidden" name="action" value="run">
+                <button class="button button-primary backup-primary-button" type="submit">Buat Backup Sekarang</button>
+            </form>
+            <div class="backup-info-stack">
+                <section class="backup-info-block">
+                    <div class="backup-info-header">
+                        <div>
+                            <span class="backup-info-label">Path Aktif</span>
+                            <strong>Folder Penyimpanan</strong>
+                        </div>
+                        <button class="button backup-copy-button" type="button" data-copy-value="{{ backup.backup_dir or '' }}" {% if not backup.backup_dir %}disabled{% endif %}>Copy</button>
+                    </div>
+                    <div class="backup-path-box" title="{{ backup.backup_dir or 'Belum dikonfigurasi' }}">
+                        <code>{{ backup.backup_dir or 'Belum dikonfigurasi' }}</code>
+                    </div>
+                </section>
+                <section class="backup-info-block">
+                    <div class="backup-info-header">
+                        <div>
+                            <span class="backup-info-label">File Backup Terbaru</span>
+                            <strong>Backup Paling Baru</strong>
+                        </div>
+                        <button class="button backup-copy-button" type="button" data-copy-value="{{ backup.latest_backup or '' }}" {% if not backup.latest_backup %}disabled{% endif %}>Copy</button>
+                    </div>
+                    <div class="backup-path-box" title="{{ backup.latest_backup or 'Belum ada backup' }}">
+                        <code>{{ backup.latest_backup or 'Belum ada backup' }}</code>
+                    </div>
+                </section>
+            </div>
+        </article>
+    </section>
+
+    <section class="panel backup-danger-panel">
+        <div class="backup-panel-header">
+            <div>
+                <h3>Reset Database oleh Sabrina Aulia</h3>
+                <p>Fitur ini cocok untuk mode percobaan. Sistem akan mencoba membuat backup pengaman terlebih dahulu, lalu menghapus database aktif dan membuat struktur database baru yang kosong.</p>
+            </div>
+        </div>
+        <div class="backup-danger-copy">
+            <p><strong>Yang akan terjadi:</strong> semua data operasional pada database aktif akan hilang dari webapp ini setelah reset.</p>
+            <p><strong>Konfirmasi:</strong> ketik <code>RESET OLEH SABRINA AULIA</code> lalu klik tombol di bawah.</p>
+        </div>
+        <form class="backup-danger-form" method="post">
+            <input type="hidden" name="action" value="reset">
+            <label class="backup-field">
+                <span>Ketik RESET OLEH SABRINA AULIA</span>
+                <input name="reset_confirmation" placeholder="RESET OLEH SABRINA AULIA" autocomplete="off">
+            </label>
+            <div class="backup-form-actions">
+                <button class="button button-danger" type="submit" onclick="return confirm('Reset database oleh Sabrina Aulia akan menghapus data aktif. Lanjutkan?');">Reset Database oleh Sabrina Aulia</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel backup-history-panel">
+        <div class="backup-panel-header backup-history-header">
+            <div>
+                <h3>Riwayat Backup</h3>
+                <p>Daftar file backup terbaru untuk membantu pengecekan cepat ukuran, waktu, dan lokasi penyimpanan.</p>
+            </div>
+        </div>
+        <div class="backup-history-wrap">
+            <table class="backup-history-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Waktu</th>
+                        <th>Ukuran</th>
+                        <th>Path</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in backup["items"] %}
+                        <tr>
+                            <td>
+                                <div class="backup-file-cell">
+                                    <strong>{{ item.name }}</strong>
+                                </div>
+                            </td>
+                            <td>{{ item.modified_at }}</td>
+                            <td>{{ item.size_kb }} KB</td>
+                            <td>
+                                <div class="backup-path-cell" title="{{ item.path }}">
+                                    {{ item.path }}
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="empty-cell backup-empty-cell">Belum ada riwayat backup.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script>
+    (() => {
+        const buttons = document.querySelectorAll("[data-copy-value]");
+        buttons.forEach((button) => {
+            button.addEventListener("click", async () => {
+                const value = button.getAttribute("data-copy-value") || "";
+                if (!value) {
+                    return;
+                }
+                const originalText = button.textContent;
+                try {
+                    await navigator.clipboard.writeText(value);
+                    button.textContent = "Tersalin";
+                } catch (error) {
+                    button.textContent = "Gagal";
+                }
+                window.setTimeout(() => {
+                    button.textContent = originalText;
+                }, 1400);
+            });
+        });
+    })();
+</script>
+{% endblock %}

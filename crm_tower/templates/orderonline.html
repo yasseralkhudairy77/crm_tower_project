@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}Peluang Lanjutan | CRM Tower{% endblock %}
+{% block heading %}Peluang Lanjutan{% endblock %}
+{% block content %}
+{% set default_pic_id = users[0].id_pengguna if users else '' %}
+{% set default_pic_name = users[0].nama_pengguna if users else '-' %}
+<div class="ops-page">
+    <section class="ops-header">
+        <div>
+            <p class="prospects-kicker">CRM Operational Workspace</p>
+            <h2>Peluang Lanjutan</h2>
+            <p class="prospects-subtitle">Antrean operasional prospek program lanjutan dari pembeli kelas awal untuk scanning cepat, follow up rapi, dan sinkronisasi CRM harian.</p>
+        </div>
+        <div class="ops-header-actions">
+            <form method="post">
+                <input type="hidden" name="action" value="sync_bulk">
+                <input type="hidden" name="pic_id" value="{{ default_pic_id }}">
+                <input type="hidden" name="sync_status" value="Baru">
+                <button class="button button-neutral" type="submit">Import Massal ke CRM</button>
+            </form>
+            <a class="button button-secondary" href="{{ url_for('orderonline_export', q=keyword, sync_status=sync_status, followup_status=followup_status or '', brand=brand) }}">Export CSV</a>
+        </div>
+    </section>
+
+    <section class="ops-metrics">
+        <article class="metric-card metric-card-compact"><span>Total Prospek</span><strong>{{ summary.total }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Belum Dihubungi</span><strong>{{ summary.not_contacted }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Sudah Masuk CRM</span><strong>{{ summary.imported }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Dihubungi Hari Ini</span><strong>{{ today_dashboard.contacted_today }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Perlu Follow Up</span><strong>{{ today_dashboard.need_followup_today }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Closing</span><strong>{{ today_dashboard.closing_after_sales }}</strong></article>
+    </section>
+
+    <section class="ops-utility-grid">
+        <article class="panel ops-utility-card">
+            <div class="panel-header"><h2>Upload CSV Sumber OrderOnline</h2></div>
+            <p class="page-subtitle">Upload file order harian agar peluang lanjutan terbaru langsung masuk ke antrean operasional.</p>
+            <form class="form-grid" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="upload">
+                <label class="span-2">File CSV<input type="file" name="csv_file" accept=".csv" required></label>
+                <div class="span-2 form-actions"><button class="button button-primary" type="submit">Upload dan Proses</button></div>
+            </form>
+        </article>
+        <article class="panel ops-utility-card">
+            <div class="panel-header"><h2>Auto Import Harian</h2></div>
+            <p class="page-subtitle">Sistem akan memproses semua file `orderonline_orders_*.csv` di folder Downloads dan otomatis memilah brand serta jenis funnel.</p>
+            <div class="ops-utility-actions">
+                <form method="post"><input type="hidden" name="action" value="auto_import"><button class="button button-primary" type="submit">Auto Import CSV Terbaru</button></form>
+                <form method="post">
+                    <input type="hidden" name="action" value="sync_bulk">
+                    <input type="hidden" name="pic_id" value="{{ default_pic_id }}">
+                    <input type="hidden" name="sync_status" value="Baru">
+                    <button class="button button-neutral" type="submit">Jalankan Import Massal</button>
+                </form>
+            </div>
+        </article>
+    </section>
+
+    <section class="panel ops-filter-card">
+        <div class="panel-header">
+            <div>
+                <h2>Filter Prospek</h2>
+                <p class="page-subtitle">Saring prospek berdasarkan nama, produk, PIC, prioritas, status sync, dan status follow up.</p>
+            </div>
+        </div>
+        <form class="ops-filter-toolbar" method="get">
+            <div class="filter-field filter-field-search"><label for="prospect-search">Cari Prospek</label><input id="prospect-search" type="search" name="q" value="{{ keyword }}" placeholder="Cari nama, nomor WhatsApp, atau produk"></div>
+            <div class="filter-field"><label for="filter-brand">Brand</label><select id="filter-brand" name="brand"><option value="">Semua brand</option>{% for option in brand_options %}<option value="{{ option }}" {% if brand == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-sync-status">Status Sync</label><select id="filter-sync-status" name="sync_status"><option value="">Semua status</option>{% for option in sync_status_options %}<option value="{{ option }}" {% if sync_status == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-followup-status">Status Follow Up</label><select id="filter-followup-status" name="followup_status"><option value="">Semua status</option>{% for option in followup_status_options %}<option value="{{ option }}" {% if followup_status == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-pic">PIC</label><select id="filter-pic" name="pic_id"><option value="">Semua PIC</option>{% for user in users %}<option value="{{ user.id_pengguna }}" {% if pic_id == user.id_pengguna|string %}selected{% endif %}>{{ user.nama_pengguna }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-product">Produk</label><select id="filter-product" name="product"><option value="">Semua produk</option>{% for option in product_options %}<option value="{{ option }}" {% if product == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-priority">Prioritas</label><select id="filter-priority" name="priority"><option value="">Semua prioritas</option>{% for option in priority_options %}<option value="{{ option }}" {% if priority == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-per-page">Rows per page</label><select id="filter-per-page" name="per_page">{% for option in per_page_options %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="ops-filter-actions"><button class="button button-primary" type="submit">Filter</button><a class="button button-secondary" href="{{ url_for('orderonline_page') }}">Reset</a><a class="button button-secondary" href="{{ url_for('orderonline_export', q=keyword, sync_status=sync_status, followup_status=followup_status or '', brand=brand) }}">Export CSV</a></div>
+        </form>
+    </section>
+
+    <section class="panel ops-table-panel">
+        <div class="ops-table-topbar">
+            <div><h2>List Prospek Program Lanjutan</h2><p>Menampilkan {{ pagination.start }}-{{ pagination.end }} dari {{ pagination.total }} prospek.</p></div>
+            <form id="bulk-action-form" class="ops-bulk-bar" method="post">
+                <input type="hidden" name="action" value="bulk_apply">
+                <input type="hidden" id="bulk-selected-ids" name="selected_ids" value="">
+                <span id="bulk-selection-count">0 dipilih</span>
+                <select id="bulk-action-select" name="bulk_action">
+                    <option value="assign_pic">Assign PIC</option>
+                    <option value="sync_status">Update Sync Status</option>
+                    <option value="followup_status">Update Follow Up Status</option>
+                    <option value="export_selected">Export Selected</option>
+                </select>
+                <select id="bulk-pic-select" name="pic_id">
+                    {% for user in users %}
+                        <option value="{{ user.id_pengguna }}">{{ user.nama_pengguna }}</option>
+                    {% endfor %}
+                </select>
+                <select id="bulk-sync-select" name="sync_status">
+                    {% for option in sync_status_options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+                <select id="bulk-followup-select" name="followup_status">
+                    {% for option in followup_status_options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+                <button class="button button-secondary" type="submit">Jalankan</button>
+            </form>
+        </div>
+        <div class="ops-table-wrap">
+            <table class="ops-table">
+                <thead>
+                    <tr>
+                        <th><input id="select-all-prospects" type="checkbox"></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='name', dir='asc' if sort_by != 'name' or sort_dir == 'desc' else 'desc') }}">Lead</a></th>
+                        <th>Produk</th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='priority', dir='asc' if sort_by != 'priority' or sort_dir == 'desc' else 'desc') }}">Prioritas</a></th>
+                        <th>Pembayaran</th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='status', dir='asc' if sort_by != 'status' or sort_dir == 'desc' else 'desc') }}">Status Follow Up</a></th>
+                        <th>PIC</th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='sync', dir='asc' if sort_by != 'sync' or sort_dir == 'desc' else 'desc') }}">Sync CRM</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='order_date', dir='asc' if sort_by != 'order_date' or sort_dir == 'desc' else 'desc') }}">Tanggal Order</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='followup_at', dir='asc' if sort_by != 'followup_at' or sort_dir == 'desc' else 'desc') }}">Last Update</a></th>
+                        <th>Tindakan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td><input class="row-selector" type="checkbox" value="{{ row.id_import }}"></td>
+                            <td><div class="ops-cell-primary">{{ row.customer_name }}</div><div class="ops-cell-meta">{{ row.phone }}</div><div class="ops-cell-meta">{{ row.brand_name or 'Umum' }}</div></td>
+                            <td><div class="ops-product-cell" title="{{ row.product }}">{{ row.product }}</div><div class="ops-cell-meta">{{ row.brand_name or 'Umum' }} · Order {{ row.order_id }}</div></td>
+                            <td><span class="status-badge status-{{ status_tone(row.priority_label) }}">{{ row.priority_label }}</span><div class="ops-cell-meta">Score {{ row.priority_score }}</div></td>
+                            <td><div class="status-row compact-row"><span class="status-badge status-{{ status_tone(row.payment_status) }}">{{ row.payment_status or '-' }}</span><span class="status-badge status-{{ status_tone(row.order_status) }}">{{ row.order_status or '-' }}</span></div></td>
+                            <td><span class="status-badge status-{{ status_tone(row.followup_status) }}">{{ row.followup_status or 'Belum Dihubungi' }}</span><div class="ops-cell-meta">{{ row.followup_result or 'Belum ada hasil' }}</div></td>
+                            <td>{{ row.nama_pengguna or default_pic_name }}</td>
+                            <td><span class="status-badge status-{{ status_tone(row.sync_status) }}">{{ row.sync_status }}</span></td>
+                            <td>{{ row.paid_at_raw or row.created_at_raw or '-' }}</td>
+                            <td><div>{{ row.followup_at or '-' }}</div>{% if row.reminder_text %}<div class="ops-cell-meta">{{ row.reminder_text }}</div>{% endif %}</td>
+                            <td>
+                                <div class="ops-row-actions">
+                                    <button class="button button-secondary open-followup-modal" type="button"
+                                        data-import-id="{{ row.id_import }}" data-name="{{ row.customer_name }}" data-phone="{{ row.phone }}"
+                                        data-product="{{ row.product }}" data-order-id="{{ row.order_id }}" data-order-date="{{ row.paid_at_raw or row.created_at_raw or '-' }}"
+                                        data-priority="{{ row.priority_label }}" data-priority-score="{{ row.priority_score }}"
+                                        data-payment-status="{{ row.payment_status or '-' }}" data-order-status="{{ row.order_status or '-' }}"
+                                        data-sync-status="{{ row.sync_status }}" data-followup-status="{{ row.followup_status or 'Belum Dihubungi' }}"
+                                        data-followup-result="{{ row.followup_result or '' }}" data-followup-at="{{ row.followup_at or '' }}"
+                                        data-next-followup-date="{{ row.next_followup_date or '' }}" data-followup-notes="{{ row.followup_notes or '' }}"
+                                        data-pic-id="{{ row.followup_by or default_pic_id }}" data-pic-name="{{ row.nama_pengguna or default_pic_name }}"
+                                        data-whatsapp="{{ wa_link(row.phone, row.customer_name, row.product, row.followup_status or 'Belum Dihubungi') }}">Detail</button>
+                                    <a class="button button-primary" target="_blank" rel="noopener noreferrer" href="{{ wa_link(row.phone, row.customer_name, row.product, row.followup_status or 'Belum Dihubungi') }}">WhatsApp</a>
+                                    <details class="ops-action-menu"><summary class="button button-neutral">Tindakan</summary><div class="ops-action-menu-panel">
+                                        <form method="post"><input type="hidden" name="action" value="quick_wa"><input type="hidden" name="import_id" value="{{ row.id_import }}"><input type="hidden" name="pic_id" value="{{ default_pic_id }}"><button class="button button-secondary" type="submit">Sudah WA</button></form>
+                                        {% if row.sync_status == 'Baru' %}<form method="post"><input type="hidden" name="action" value="sync_one"><input type="hidden" name="import_id" value="{{ row.id_import }}"><input type="hidden" name="pic_id" value="{{ default_pic_id }}"><button class="button button-neutral" type="submit">Masukkan ke CRM</button></form>{% endif %}
+                                    </div></details>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="11" class="empty-cell">Belum ada data prospek yang tampil untuk filter ini.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="ops-pagination">
+            <div class="ops-pagination-info">Menampilkan {{ pagination.start }}-{{ pagination.end }} dari {{ pagination.total }} prospek</div>
+            <div class="ops-pagination-links">
+                {% if pagination.has_prev %}<a class="button button-secondary" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.prev_page) }}">Prev</a>{% endif %}
+                {% for page_number in range(1, pagination.total_pages + 1) %}{% if page_number == 1 or page_number == pagination.total_pages or (page_number >= pagination.page - 2 and page_number <= pagination.page + 2) %}<a class="button {% if page_number == pagination.page %}button-primary{% else %}button-secondary{% endif %}" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=page_number) }}">{{ page_number }}</a>{% endif %}{% endfor %}
+                {% if pagination.has_next %}<a class="button button-secondary" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.next_page) }}">Next</a>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="grid grid-two">
+        <article class="panel"><div class="panel-header"><h2>Aktivitas Follow Up Hari Ini</h2></div><div class="list-stack">{% for row in today_dashboard.latest_contacts %}<div class="list-item"><strong>{{ row.customer_name }}</strong><span>{{ row.product }}</span><div class="status-row"><span class="status-badge status-{{ status_tone(row.followup_status) }}">{{ row.followup_status }}</span><span class="status-badge status-neutral">{{ row.followup_at or '-' }}</span></div></div>{% else %}<p class="empty">Belum ada aktivitas follow up hari ini.</p>{% endfor %}</div></article>
+        <article class="panel"><div class="panel-header"><h2>Reminder Follow Up</h2></div><div class="list-stack">{% for row in today_dashboard.overdue_reminders %}<div class="list-item"><strong>{{ row.customer_name }}</strong><span>{{ row.product }}</span><div class="status-row"><span class="status-badge status-{{ status_tone(row.priority_label) }}">{{ row.priority_label }}</span><span class="status-badge status-warning">{{ row.reminder_text }}</span></div></div>{% else %}<p class="empty">Belum ada reminder follow up yang lewat 2 hari.</p>{% endfor %}</div></article>
+    </section>
+</div>
+
+<dialog id="followup-modal" class="ops-modal">
+    <form method="dialog" class="ops-modal-shell"><div class="ops-modal-header"><div><p class="prospect-label">Detail Prospek</p><h3 id="modal-lead-name">Prospek</h3><p id="modal-lead-meta" class="prospect-meta"></p></div><button class="button button-secondary" type="submit">Tutup</button></div></form>
+    <div class="ops-modal-body">
+        <div class="ops-modal-summary">
+            <div class="prospect-status-grid">
+                <div class="prospect-status-item"><span>Produk</span><strong id="modal-product"></strong></div>
+                <div class="prospect-status-item"><span>Order ID</span><strong id="modal-order-id"></strong></div>
+                <div class="prospect-status-item"><span>Tanggal Order</span><strong id="modal-order-date"></strong></div>
+                <div class="prospect-status-item"><span>Prioritas</span><strong id="modal-priority"></strong></div>
+                <div class="prospect-status-item"><span>Pembayaran</span><strong id="modal-payment"></strong></div>
+                <div class="prospect-status-item"><span>Sync CRM</span><strong id="modal-sync"></strong></div>
+            </div>
+            <div class="ops-modal-history"><h4>Riwayat Follow Up</h4><div id="modal-history-list" class="list-stack"><p class="empty">Belum ada riwayat follow up.</p></div></div>
+        </div>
+        <div class="ops-modal-form-wrap">
+            <form id="modal-followup-form" class="prospect-followup-form" method="post">
+                <input type="hidden" name="action" value="followup_status">
+                <input type="hidden" name="import_id" id="modal-import-id" value="">
+                <div class="prospect-form-grid">
+                    <label>Status Follow Up<select name="followup_status" id="modal-followup-status">{% for option in followup_status_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label>
+                    <label>PIC Penanggung Jawab<select name="pic_id" id="modal-pic-id">{% for user in users %}<option value="{{ user.id_pengguna }}">{{ user.nama_pengguna }}</option>{% endfor %}</select></label>
+                    <label>Channel Follow Up<select name="contact_channel" id="modal-contact-channel">{% for option in contact_channel_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label>
+                    <label>Hasil Follow Up<select name="followup_result" id="modal-followup-result"><option value="">Pilih hasil</option>{% for option in followup_result_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label>
+                    <label>Tanggal Follow Up Berikutnya<input type="date" name="next_followup_date" id="modal-next-followup-date"></label>
+                    <label>Last Update<input type="text" id="modal-followup-at" disabled></label>
+                    <label class="prospect-form-note">Catatan Follow Up<textarea name="followup_notes" id="modal-followup-notes" rows="4"></textarea></label>
+                </div>
+                <div class="ops-modal-actions"><button class="button button-success" type="submit">Simpan Update</button><a id="modal-whatsapp-link" class="button button-primary" target="_blank" rel="noopener noreferrer" href="#">WhatsApp</a></div>
+            </form>
+            <div class="ops-modal-secondary-actions">
+                <form id="modal-quickwa-form" method="post"><input type="hidden" name="action" value="quick_wa"><input type="hidden" name="import_id" id="modal-quickwa-import-id" value=""><input type="hidden" name="pic_id" id="modal-quickwa-pic-id" value="{{ default_pic_id }}"><button class="button button-secondary" type="submit">Tandai Sudah WA</button></form>
+                <form id="modal-sync-form" method="post"><input type="hidden" name="action" value="sync_one"><input type="hidden" name="import_id" id="modal-sync-import-id" value=""><input type="hidden" name="pic_id" id="modal-sync-pic-id" value="{{ default_pic_id }}"><button class="button button-neutral" type="submit">Masukkan ke CRM</button></form>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<script>
+(() => {
+  const modal = document.getElementById("followup-modal");
+  const selectAll = document.getElementById("select-all-prospects");
+  const rowSelectors = [...document.querySelectorAll(".row-selector")];
+  const selectionCount = document.getElementById("bulk-selection-count");
+  const bulkForm = document.getElementById("bulk-action-form");
+  const bulkSelectedIds = document.getElementById("bulk-selected-ids");
+  const bulkActionSelect = document.getElementById("bulk-action-select");
+  const bulkPicSelect = document.getElementById("bulk-pic-select");
+  const bulkSyncSelect = document.getElementById("bulk-sync-select");
+  const bulkFollowupSelect = document.getElementById("bulk-followup-select");
+  const updateCount = () => selectionCount.textContent = `${rowSelectors.filter((item) => item.checked).length} dipilih`;
+  const selectedIds = () => rowSelectors.filter((item) => item.checked).map((item) => item.value);
+  const syncBulkFields = () => {
+    const mode = bulkActionSelect.value;
+    bulkPicSelect.style.display = (mode === "assign_pic" || mode === "followup_status") ? "block" : "none";
+    bulkSyncSelect.style.display = mode === "sync_status" ? "block" : "none";
+    bulkFollowupSelect.style.display = mode === "followup_status" ? "block" : "none";
+  };
+  if (selectAll) selectAll.addEventListener("change", () => { rowSelectors.forEach((item) => item.checked = selectAll.checked); updateCount(); });
+  rowSelectors.forEach((item) => item.addEventListener("change", updateCount));
+  syncBulkFields();
+  bulkActionSelect.addEventListener("change", syncBulkFields);
+  bulkForm.addEventListener("submit", (event) => {
+    const ids = selectedIds();
+    if (!ids.length) {
+      event.preventDefault();
+      window.alert("Pilih minimal satu prospek terlebih dahulu.");
+      return;
+    }
+    bulkSelectedIds.value = ids.join(",");
+    if (bulkActionSelect.value === "export_selected") {
+      event.preventDefault();
+      const params = new URLSearchParams({ ids: ids.join(","), q: "{{ keyword }}", sync_status: "{{ sync_status }}", followup_status: "{{ followup_status }}", brand: "{{ brand }}" });
+      window.location.href = `/peluang-lanjutan/export?${params.toString()}`;
+    }
+  });
+  const modalPic = document.getElementById("modal-pic-id");
+  modalPic.addEventListener("change", (event) => { document.getElementById("modal-quickwa-pic-id").value = event.target.value; document.getElementById("modal-sync-pic-id").value = event.target.value; });
+  const renderHistory = (logs) => {
+    const node = document.getElementById("modal-history-list");
+    node.innerHTML = !logs || !logs.length ? '<p class="empty">Belum ada riwayat follow up.</p>' : logs.map((log) => `<div class="list-item"><strong>${log.action_type || "-"}</strong><span>${log.created_at || "-"} | ${log.nama_pengguna || "-"}</span><p>${log.notes || log.outcome || "-"}</p></div>`).join("");
+  };
+  document.querySelectorAll(".open-followup-modal").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const data = button.dataset;
+      document.getElementById("modal-import-id").value = data.importId;
+      document.getElementById("modal-quickwa-import-id").value = data.importId;
+      document.getElementById("modal-sync-import-id").value = data.importId;
+      document.getElementById("modal-lead-name").textContent = data.name;
+      document.getElementById("modal-lead-meta").textContent = `${data.phone} | ${data.picName}`;
+      document.getElementById("modal-product").textContent = data.product;
+      document.getElementById("modal-order-id").textContent = data.orderId;
+      document.getElementById("modal-order-date").textContent = data.orderDate;
+      document.getElementById("modal-priority").textContent = `${data.priority} (Score ${data.priorityScore})`;
+      document.getElementById("modal-payment").textContent = `${data.paymentStatus} / ${data.orderStatus}`;
+      document.getElementById("modal-sync").textContent = data.syncStatus;
+      document.getElementById("modal-followup-status").value = data.followupStatus || "Belum Dihubungi";
+      document.getElementById("modal-followup-result").value = data.followupResult || "";
+      document.getElementById("modal-next-followup-date").value = data.nextFollowupDate || "";
+      document.getElementById("modal-followup-notes").value = data.followupNotes || "";
+      document.getElementById("modal-followup-at").value = data.followupAt || "-";
+      modalPic.value = data.picId || "{{ default_pic_id }}";
+      document.getElementById("modal-quickwa-pic-id").value = modalPic.value;
+      document.getElementById("modal-sync-pic-id").value = modalPic.value;
+      document.getElementById("modal-whatsapp-link").href = data.whatsapp || "#";
+      document.getElementById("modal-sync-form").style.display = data.syncStatus === "Baru" ? "block" : "none";
+      renderHistory([]);
+      if (typeof modal.showModal === "function") modal.showModal(); else modal.setAttribute("open", "open");
+      try {
+        const response = await fetch(`/api/orderonline/${data.importId}`);
+        const payload = await response.json();
+        if (payload.ok && payload.detail) {
+          const detail = payload.detail;
+          document.getElementById("modal-followup-status").value = detail.followup_status || "Belum Dihubungi";
+          document.getElementById("modal-followup-result").value = detail.followup_result || "";
+          document.getElementById("modal-next-followup-date").value = detail.next_followup_date || "";
+          document.getElementById("modal-followup-notes").value = detail.followup_notes || "";
+          document.getElementById("modal-followup-at").value = detail.followup_at || "-";
+          renderHistory(detail.logs || []);
+        }
+      } catch (error) { console.error(error); }
+    });
+  });
+})();
+</script>
+{% endblock %}

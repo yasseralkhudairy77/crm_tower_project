@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% block title %}Keluhan | CRM Tower{% endblock %}
+{% block heading %}Keluhan & Pertanyaan{% endblock %}
+{% block content %}
+{% set default_pic_id = users[0].id_pengguna if users else '' %}
+{% set default_pic_name = users[0].nama_pengguna if users else '-' %}
+<div class="ops-page">
+    <section class="ops-header">
+        <div>
+            <p class="prospects-kicker">CRM Issue Workspace</p>
+            <h2>Keluhan & Pertanyaan Member</h2>
+            <p class="prospects-subtitle">Workspace operasional untuk mencatat, memantau, dan menyelesaikan keluhan member secara rapi lintas brand.</p>
+        </div>
+    </section>
+
+    <section class="ops-metrics">
+        <article class="metric-card metric-card-compact"><span>Total Tiket</span><strong>{{ issue_stats.total }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Masih Terbuka</span><strong>{{ issue_stats.open }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Baru</span><strong>{{ issue_stats.new }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Sedang Ditangani</span><strong>{{ issue_stats.handling }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Selesai</span><strong>{{ issue_stats.done }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Prioritas Tinggi</span><strong>{{ issue_stats.high }}</strong></article>
+    </section>
+
+    <section class="ops-utility-grid">
+        <article class="panel ops-utility-card">
+            <div class="panel-header"><h2>Buat Tiket Baru</h2></div>
+            <p class="page-subtitle">Catat pertanyaan, keluhan, feedback, atau kendala teknis dari member agar penanganannya tidak tercecer.</p>
+            <form class="form-grid" method="post">
+                <input type="hidden" name="action" value="create">
+                <label>
+                    Member
+                    <select name="member_id">
+                        {% for row in members %}
+                            <option value="{{ row.id_member }}">{{ row.nama_member }}{% if row.brand_utama %} | {{ row.brand_utama }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    PIC
+                    <select name="penanggung_jawab">
+                        {% for row in users %}
+                            <option value="{{ row.id_pengguna }}">{{ row.nama_pengguna }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    Jenis Masalah
+                    <select name="jenis_masalah">
+                        {% for option in issue_types %}
+                            <option value="{{ option }}">{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    Prioritas
+                    <select name="prioritas">
+                        {% for option in priorities %}
+                            <option value="{{ option }}">{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="span-2">
+                    Detail Masalah
+                    <textarea name="detail_masalah" rows="4" required></textarea>
+                </label>
+                <div class="span-2 form-actions">
+                    <button class="button button-primary" type="submit">Tambah Keluhan</button>
+                </div>
+            </form>
+        </article>
+
+        <article class="panel ops-utility-card">
+            <div class="panel-header"><h2>Alur Penanganan</h2></div>
+            <div class="list-stack">
+                <div class="list-item"><strong>1. Catat tiket masuk</strong><span>Pilih member, jenis masalah, prioritas, dan detail isu.</span></div>
+                <div class="list-item"><strong>2. Tinjau di tabel operasional</strong><span>Gunakan filter brand, status, PIC, dan prioritas untuk scanning cepat.</span></div>
+                <div class="list-item"><strong>3. Update lewat detail</strong><span>Buka modal detail, rapikan catatan penyelesaian, dan ubah status penanganan.</span></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="panel ops-filter-card">
+        <div class="panel-header">
+            <div>
+                <h2>Filter Keluhan</h2>
+                <p class="page-subtitle">Saring tiket berdasarkan keyword, brand, jenis masalah, prioritas, status, dan PIC.</p>
+            </div>
+        </div>
+        <form class="ops-filter-toolbar" method="get">
+            <div class="filter-field filter-field-search">
+                <label for="issue-search">Cari Tiket</label>
+                <input id="issue-search" type="search" name="q" value="{{ keyword }}" placeholder="Cari member, WhatsApp, atau detail masalah">
+            </div>
+            <div class="filter-field">
+                <label for="issue-brand">Brand</label>
+                <select id="issue-brand" name="brand">
+                    <option value="">Semua brand</option>
+                    {% for option in brand_options %}
+                        <option value="{{ option }}" {% if selected_brand == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="issue-type">Jenis Masalah</label>
+                <select id="issue-type" name="issue_type">
+                    <option value="">Semua jenis</option>
+                    {% for option in issue_types %}
+                        <option value="{{ option }}" {% if selected_issue_type == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="issue-priority">Prioritas</label>
+                <select id="issue-priority" name="priority">
+                    <option value="">Semua prioritas</option>
+                    {% for option in priorities %}
+                        <option value="{{ option }}" {% if selected_priority == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="issue-status">Status</label>
+                <select id="issue-status" name="status">
+                    <option value="">Semua status</option>
+                    {% for option in status_options %}
+                        <option value="{{ option }}" {% if selected_status == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="issue-pic">PIC</label>
+                <select id="issue-pic" name="pic_id">
+                    <option value="">Semua PIC</option>
+                    {% for row in users %}
+                        <option value="{{ row.id_pengguna }}" {% if selected_pic_id == row.id_pengguna|string %}selected{% endif %}>{{ row.nama_pengguna }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="issue-per-page">Rows per page</label>
+                <select id="issue-per-page" name="per_page">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ops-filter-actions">
+                <button class="button button-primary" type="submit">Filter</button>
+                <a class="button button-secondary" href="{{ url_for('issues_page') }}">Reset</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel ops-table-panel">
+        <div class="ops-table-topbar">
+            <div><h2>Daftar Keluhan</h2><p>Menampilkan {{ pagination.start }}-{{ pagination.end }} dari {{ pagination.total }} tiket.</p></div>
+            <form id="issue-bulk-action-form" class="ops-bulk-bar" method="post">
+                <input type="hidden" name="action" value="bulk_apply">
+                <input type="hidden" id="issue-bulk-selected-ids" name="selected_ids" value="">
+                <span id="issue-bulk-selection-count">0 dipilih</span>
+                <select id="issue-bulk-action" name="bulk_action">
+                    <option value="assign_pic">Assign PIC</option>
+                    <option value="status">Update Status</option>
+                </select>
+                <select id="issue-bulk-pic" name="penanggung_jawab">
+                    {% for row in users %}
+                        <option value="{{ row.id_pengguna }}">{{ row.nama_pengguna }}</option>
+                    {% endfor %}
+                </select>
+                <select id="issue-bulk-status" name="status_penanganan">
+                    {% for option in status_options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+                <button class="button button-secondary" type="submit">Jalankan</button>
+            </form>
+        </div>
+
+        <div class="ops-table-wrap">
+            <table class="ops-table">
+                <thead>
+                    <tr>
+                        <th><input id="select-all-issues" type="checkbox"></th>
+                        <th><a class="sort-link" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, page=1, sort='name', dir='asc' if sort_by != 'name' or sort_dir == 'desc' else 'desc') }}">Member</a></th>
+                        <th><a class="sort-link" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, page=1, sort='brand', dir='asc' if sort_by != 'brand' or sort_dir == 'desc' else 'desc') }}">Brand</a></th>
+                        <th>Jenis Masalah</th>
+                        <th><a class="sort-link" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, page=1, sort='priority', dir='asc' if sort_by != 'priority' or sort_dir == 'desc' else 'desc') }}">Prioritas</a></th>
+                        <th><a class="sort-link" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, page=1, sort='status', dir='asc' if sort_by != 'status' or sort_dir == 'desc' else 'desc') }}">Status</a></th>
+                        <th><a class="sort-link" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, page=1, sort='pic', dir='asc' if sort_by != 'pic' or sort_dir == 'desc' else 'desc') }}">PIC</a></th>
+                        <th><a class="sort-link" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, page=1, sort='date', dir='asc' if sort_by != 'date' or sort_dir == 'desc' else 'desc') }}">Tanggal Masuk</a></th>
+                        <th>Tindakan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in issues %}
+                        <tr>
+                            <td><input class="issue-row-selector" type="checkbox" value="{{ row.id_keluhan }}"></td>
+                            <td>
+                                <div class="ops-cell-primary">{{ row.nama_member }}</div>
+                                <div class="ops-cell-meta">{{ row.nomor_whatsapp or '-' }}</div>
+                            </td>
+                            <td><span class="status-badge status-neutral">{{ row.brand_utama or 'Umum' }}</span></td>
+                            <td>
+                                <div class="ops-cell-primary">{{ row.jenis_masalah }}</div>
+                                <div class="ops-cell-meta">{{ row.detail_masalah[:90] }}{% if row.detail_masalah|length > 90 %}...{% endif %}</div>
+                            </td>
+                            <td><span class="status-badge status-{{ status_tone(row.prioritas) }}">{{ row.prioritas }}</span></td>
+                            <td><span class="status-badge status-{{ status_tone(row.status_penanganan) }}">{{ row.status_penanganan }}</span></td>
+                            <td>{{ row.nama_pengguna or default_pic_name }}</td>
+                            <td>{{ row.tanggal_masuk }}</td>
+                            <td>
+                                <div class="ops-row-actions">
+                                    <button
+                                        class="button button-secondary open-issue-modal"
+                                        type="button"
+                                        data-issue-id="{{ row.id_keluhan }}"
+                                        data-member-name="{{ row.nama_member }}"
+                                        data-phone="{{ row.nomor_whatsapp or '' }}"
+                                        data-brand="{{ row.brand_utama or 'Umum' }}"
+                                        data-issue-type="{{ row.jenis_masalah }}"
+                                        data-priority="{{ row.prioritas }}"
+                                        data-status="{{ row.status_penanganan }}"
+                                        data-pic-id="{{ row.penanggung_jawab }}"
+                                        data-pic-name="{{ row.nama_pengguna or default_pic_name }}"
+                                        data-date="{{ row.tanggal_masuk }}"
+                                        data-detail="{{ row.detail_masalah }}"
+                                        data-note="{{ row.catatan_penyelesaian or '' }}"
+                                        data-wa="{{ wa_link(row.nomor_whatsapp, row.nama_member, 'keluhan atau pertanyaan member') }}"
+                                    >Detail</button>
+                                    <a class="button button-primary" target="_blank" rel="noopener noreferrer" href="{{ wa_link(row.nomor_whatsapp, row.nama_member, 'keluhan atau pertanyaan member') }}">WhatsApp</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="9" class="empty-cell">Belum ada keluhan untuk filter ini.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ops-pagination">
+            <div class="ops-pagination-info">Menampilkan {{ pagination.start }}-{{ pagination.end }} dari {{ pagination.total }} tiket</div>
+            <div class="ops-pagination-links">
+                {% if pagination.has_prev %}<a class="button button-secondary" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.prev_page) }}">Prev</a>{% endif %}
+                {% for page_number in range(1, pagination.total_pages + 1) %}
+                    {% if page_number == 1 or page_number == pagination.total_pages or (page_number >= pagination.page - 2 and page_number <= pagination.page + 2) %}
+                        <a class="button {% if page_number == pagination.page %}button-primary{% else %}button-secondary{% endif %}" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=page_number) }}">{{ page_number }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if pagination.has_next %}<a class="button button-secondary" href="{{ url_for('issues_page', q=keyword, brand=selected_brand, issue_type=selected_issue_type, priority=selected_priority, status=selected_status, pic_id=selected_pic_id, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.next_page) }}">Next</a>{% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<dialog id="issue-modal" class="ops-modal">
+    <form method="dialog" class="ops-modal-shell">
+        <div class="ops-modal-header">
+            <div>
+                <p class="prospect-label">Detail Keluhan</p>
+                <h3 id="issue-modal-name">Keluhan</h3>
+                <p id="issue-modal-meta" class="prospect-meta"></p>
+            </div>
+            <button class="button button-secondary" type="submit">Tutup</button>
+        </div>
+    </form>
+    <div class="ops-modal-body">
+        <div class="ops-modal-summary">
+            <div class="prospect-status-grid">
+                <div class="prospect-status-item"><span>Brand</span><strong id="issue-modal-brand"></strong></div>
+                <div class="prospect-status-item"><span>Jenis Masalah</span><strong id="issue-modal-type"></strong></div>
+                <div class="prospect-status-item"><span>Prioritas</span><strong id="issue-modal-priority"></strong></div>
+                <div class="prospect-status-item"><span>Status</span><strong id="issue-modal-status"></strong></div>
+                <div class="prospect-status-item"><span>PIC</span><strong id="issue-modal-pic"></strong></div>
+                <div class="prospect-status-item"><span>Tanggal Masuk</span><strong id="issue-modal-date"></strong></div>
+            </div>
+            <div class="ops-modal-history">
+                <h4>Detail Masalah</h4>
+                <div class="list-stack">
+                    <div class="list-item">
+                        <p id="issue-modal-detail"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ops-modal-form-wrap">
+            <form id="issue-modal-form" class="prospect-followup-form" method="post">
+                <input type="hidden" name="action" value="update_status">
+                <input type="hidden" name="issue_id" id="issue-modal-id" value="">
+                <div class="prospect-form-grid">
+                    <label>Status Penanganan
+                        <select name="status_penanganan" id="issue-modal-status-input">
+                            {% for option in status_options %}
+                                <option value="{{ option }}">{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>PIC Aktif
+                        <input type="text" id="issue-modal-pic-input" disabled>
+                    </label>
+                    <label class="prospect-form-note">Catatan Penyelesaian
+                        <textarea name="catatan_penyelesaian" id="issue-modal-note" rows="5"></textarea>
+                    </label>
+                </div>
+                <div class="ops-modal-actions">
+                    <button class="button button-success" type="submit">Simpan Update</button>
+                    <a id="issue-modal-wa" class="button button-primary" target="_blank" rel="noopener noreferrer" href="#">WhatsApp</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</dialog>
+
+<script>
+(() => {
+  const modal = document.getElementById("issue-modal");
+  const selectAll = document.getElementById("select-all-issues");
+  const selectors = [...document.querySelectorAll(".issue-row-selector")];
+  const countNode = document.getElementById("issue-bulk-selection-count");
+  const form = document.getElementById("issue-bulk-action-form");
+  const idsInput = document.getElementById("issue-bulk-selected-ids");
+  const actionSelect = document.getElementById("issue-bulk-action");
+  const picInput = document.getElementById("issue-bulk-pic");
+  const statusInput = document.getElementById("issue-bulk-status");
+
+  const updateCount = () => countNode.textContent = `${selectors.filter((item) => item.checked).length} dipilih`;
+  const syncBulkUi = () => {
+    const mode = actionSelect.value;
+    picInput.style.display = mode === "assign_pic" ? "block" : "none";
+    statusInput.style.display = mode === "status" ? "block" : "none";
+  };
+
+  if (selectAll) {
+    selectAll.addEventListener("change", () => {
+      selectors.forEach((item) => item.checked = selectAll.checked);
+      updateCount();
+    });
+  }
+  selectors.forEach((item) => item.addEventListener("change", updateCount));
+  actionSelect.addEventListener("change", syncBulkUi);
+  syncBulkUi();
+
+  form.addEventListener("submit", (event) => {
+    const ids = selectors.filter((item) => item.checked).map((item) => item.value);
+    if (!ids.length) {
+      event.preventDefault();
+      window.alert("Pilih minimal satu keluhan terlebih dahulu.");
+      return;
+    }
+    idsInput.value = ids.join(",");
+  });
+
+  document.querySelectorAll(".open-issue-modal").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const data = button.dataset;
+      document.getElementById("issue-modal-id").value = data.issueId;
+      document.getElementById("issue-modal-name").textContent = data.memberName;
+      document.getElementById("issue-modal-meta").textContent = `${data.phone || '-'} | ${data.picName}`;
+      document.getElementById("issue-modal-brand").textContent = data.brand;
+      document.getElementById("issue-modal-type").textContent = data.issueType;
+      document.getElementById("issue-modal-priority").textContent = data.priority;
+      document.getElementById("issue-modal-status").textContent = data.status;
+      document.getElementById("issue-modal-pic").textContent = data.picName;
+      document.getElementById("issue-modal-date").textContent = data.date;
+      document.getElementById("issue-modal-detail").textContent = data.detail;
+      document.getElementById("issue-modal-status-input").value = data.status;
+      document.getElementById("issue-modal-pic-input").value = data.picName;
+      document.getElementById("issue-modal-note").value = data.note || "";
+      document.getElementById("issue-modal-wa").href = data.wa || "#";
+      if (typeof modal.showModal === "function") modal.showModal(); else modal.setAttribute("open", "open");
+      try {
+        const response = await fetch(`/api/issues/${data.issueId}`);
+        const payload = await response.json();
+        if (payload.ok && payload.detail) {
+          const detail = payload.detail;
+          document.getElementById("issue-modal-status-input").value = detail.status_penanganan || data.status;
+          document.getElementById("issue-modal-note").value = detail.catatan_penyelesaian || "";
+        }
+      } catch (error) { console.error(error); }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block title %}Member | CRM Tower{% endblock %}
+{% block heading %}Data Member{% endblock %}
+{% block content %}
+{% set default_pic_id = users[0].id_pengguna if users else '' %}
+{% set default_pic_name = users[0].nama_pengguna if users else '-' %}
+<div class="ops-page">
+    <section class="ops-header">
+        <div>
+            <p class="prospects-kicker">Customer Relationship Care</p>
+            <h2>List Relasi Member Program Lanjutan</h2>
+            <p class="prospects-subtitle">Workspace operasional untuk menjaga hubungan dengan member setelah membeli program lanjutan, memantau progress belajar, praktik, dan kendala yang mereka hadapi.</p>
+        </div>
+        <div class="ops-header-actions">
+            <form method="post">
+                <input type="hidden" name="action" value="auto_import">
+                <button class="button button-primary" type="submit">Auto Import Harian</button>
+            </form>
+            <a class="button button-secondary" href="{{ url_for('members_export', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '') }}">Export CSV</a>
+            <a class="button button-secondary" href="{{ url_for('member_create') }}">Tambah Member</a>
+        </div>
+    </section>
+
+    <section class="ops-metrics">
+        <article class="metric-card metric-card-compact"><span>Total Member</span><strong>{{ member_stats.total }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Follow Up Hari Ini</span><strong>{{ member_stats.today_due }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Terlambat Follow Up</span><strong>{{ member_stats.overdue }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Sudah Mulai Praktik</span><strong>{{ member_stats.practicing }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Masih Terkendala</span><strong>{{ member_stats.blocked }}</strong></article>
+        <article class="metric-card metric-card-compact"><span>Perlu Perhatian Relasi</span><strong>{{ member_stats.need_attention }}</strong></article>
+    </section>
+
+    <section class="ops-utility-grid">
+        <article class="panel ops-utility-card">
+            <div class="panel-header"><h2>Upload CSV Member dari OrderOnline</h2></div>
+            <p class="page-subtitle">Upload file harian OrderOnline untuk memasukkan pembeli program lanjutan ke menu relasi member.</p>
+            <form class="form-grid" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="upload">
+                <label class="span-2">File CSV<input type="file" name="csv_file" accept=".csv" required></label>
+                <div class="span-2 form-actions"><button class="button button-primary" type="submit">Upload dan Import Member</button></div>
+            </form>
+        </article>
+        <article class="panel ops-utility-card">
+            <div class="panel-header"><h2>Workflow Harian CRM</h2></div>
+            <p class="page-subtitle">Download data OrderOnline, import ke sistem ini, lalu pantau relasi dan perkembangan member setiap hari.</p>
+            <div class="list-stack">
+                <div class="list-item"><strong>1. Download data terbaru</strong><span>Ambil file order terbaru pembeli program lanjutan dari OrderOnline.</span></div>
+                <div class="list-item"><strong>2. Import ke menu Member</strong><span>Gunakan `Auto Import Harian` atau upload manual CSV, lalu sistem akan memilah data member dari semua brand secara otomatis.</span></div>
+                <div class="list-item"><strong>3. Jaga hubungan dengan member</strong><span>Tanya perkembangan belajar, praktik, kendala, dan jadwalkan follow up berikutnya.</span></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="panel ops-filter-card">
+        <div class="panel-header">
+            <div>
+                <h2>Filter Member</h2>
+                <p class="page-subtitle">Cari member berdasarkan nama, status, progress, PIC, dan fokus follow up yang terlambat.</p>
+            </div>
+        </div>
+        <form class="ops-filter-toolbar" method="get">
+            <div class="filter-field filter-field-search"><label for="member-search">Cari Member</label><input id="member-search" type="search" name="q" value="{{ keyword }}" placeholder="Cari nama atau nomor WhatsApp"></div>
+            <div class="filter-field"><label for="member-brand">Brand</label><select id="member-brand" name="brand"><option value="">Semua brand</option>{% for option in brand_options %}<option value="{{ option }}" {% if selected_brand == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="member-status">Status Member</label><select id="member-status" name="status"><option value="">Semua status</option>{% for option in status_options %}<option value="{{ option }}" {% if selected_status == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="member-pic">PIC</label><select id="member-pic" name="pic_id"><option value="">Semua PIC</option>{% for row in users %}<option value="{{ row.id_pengguna }}" {% if selected_pic_id == row.id_pengguna|string %}selected{% endif %}>{{ row.nama_pengguna }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="member-per-page">Rows per page</label><select id="member-per-page" name="per_page">{% for option in per_page_options %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="ops-filter-actions">
+                <label class="checkbox-inline member-overdue-toggle"><input type="checkbox" name="overdue_only" value="1" {% if overdue_only %}checked{% endif %}>Hanya yang terlambat</label>
+                <button class="button button-primary" type="submit">Filter</button>
+                <a class="button button-secondary" href="{{ url_for('members_page') }}">Reset</a>
+                <a class="button button-secondary" href="{{ url_for('members_export', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '') }}">Export CSV</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel ops-table-panel">
+        <div class="ops-table-topbar">
+            <div><h2>List Relasi Member Program Lanjutan</h2><p>Menampilkan {{ pagination.start }}-{{ pagination.end }} dari {{ pagination.total }} member.</p></div>
+            <form id="member-bulk-action-form" class="ops-bulk-bar" method="post">
+                <input type="hidden" name="action" value="bulk_apply">
+                <input type="hidden" id="member-bulk-selected-ids" name="selected_ids" value="">
+                <span id="member-bulk-selection-count">0 dipilih</span>
+                <select id="member-bulk-action" name="bulk_action">
+                    <option value="assign_pic">Assign PIC</option>
+                    <option value="status_member">Update Status Member</option>
+                    <option value="schedule_followup">Jadwalkan Follow Up</option>
+                    <option value="export_selected">Export Selected</option>
+                </select>
+                <select id="member-bulk-pic" name="penanggung_jawab">{% for user in users %}<option value="{{ user.id_pengguna }}">{{ user.nama_pengguna }}</option>{% endfor %}</select>
+                <select id="member-bulk-status" name="status_member">{% for option in status_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select>
+                <input id="member-bulk-date" type="date" name="tanggal_tindak_lanjut_berikutnya" value="{{ today_str() }}">
+                <button class="button button-secondary" type="submit">Jalankan</button>
+            </form>
+        </div>
+        <div class="ops-table-wrap">
+            <table class="ops-table">
+                <thead>
+                    <tr>
+                        <th><input id="select-all-members" type="checkbox"></th>
+                        <th><a class="sort-link" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, page=1, sort='name', dir='desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc') }}">Member</a></th>
+                        <th><a class="sort-link" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, page=1, sort='progress', dir='desc' if sort_by == 'progress' and sort_dir == 'asc' else 'asc') }}">Progress</a></th>
+                        <th><a class="sort-link" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, page=1, sort='status', dir='desc' if sort_by == 'status' and sort_dir == 'asc' else 'asc') }}">Status</a></th>
+                        <th><a class="sort-link" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, page=1, sort='pic', dir='desc' if sort_by == 'pic' and sort_dir == 'asc' else 'asc') }}">PIC</a></th>
+                        <th><a class="sort-link" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, page=1, sort='last_contact', dir='desc' if sort_by == 'last_contact' and sort_dir == 'asc' else 'asc') }}">Kontak Terakhir</a></th>
+                        <th><a class="sort-link" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, page=1, sort='next_followup', dir='desc' if sort_by == 'next_followup' and sort_dir == 'asc' else 'asc') }}">Next Follow Up</a></th>
+                        <th>Perhatian</th>
+                        <th>Tindakan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in members %}
+                        <tr>
+                            <td><input class="member-row-selector" type="checkbox" value="{{ row.id_member }}"></td>
+                            <td><div class="ops-cell-primary">{{ row.nama_member }}</div><div class="ops-cell-meta">{{ row.nomor_whatsapp }}{% if row.kota %} | {{ row.kota }}{% endif %}</div><div class="ops-cell-meta">{{ row.brand_utama or 'Umum' }}</div></td>
+                            <td><div class="ops-cell-primary">{{ row.tahap_progress }}</div><div class="ops-cell-meta">{% if row.sudah_mulai_praktik %}Sudah mulai praktik{% else %}Belum mulai praktik{% endif %}</div></td>
+                            <td><div class="status-row compact-row"><span class="status-badge status-{{ status_tone(row.status_member) }}">{{ row.status_member }}</span><span class="status-badge status-{{ status_tone(row.kategori_potensi) }}">{{ row.kategori_potensi }}</span></div></td>
+                            <td>{{ row.nama_pengguna or default_pic_name }}</td>
+                            <td>{{ row.tanggal_kontak_terakhir or '-' }}</td>
+                            <td><div>{{ row.tanggal_tindak_lanjut_berikutnya }}</div><div class="ops-cell-meta">{{ row.status_keterlambatan }}</div></td>
+                            <td>{% if row.status_member == 'Masih Terkendala' %}<span class="status-badge status-warning">Perlu bantuan</span>{% elif row.sudah_mulai_praktik %}<span class="status-badge status-positive">Jaga momentum</span>{% else %}<span class="status-badge status-info">Dorong praktik</span>{% endif %}</td>
+                            <td>
+                                <div class="ops-row-actions">
+                                    <button class="button button-secondary open-member-modal" type="button"
+                                        data-member-id="{{ row.id_member }}"
+                                        data-name="{{ row.nama_member }}"
+                                        data-phone="{{ row.nomor_whatsapp }}"
+                                        data-city="{{ row.kota or '' }}"
+                                        data-status-member="{{ row.status_member }}"
+                                        data-progress="{{ row.tahap_progress }}"
+                                        data-praktik="{{ 1 if row.sudah_mulai_praktik else 0 }}"
+                                        data-potential="{{ row.kategori_potensi }}"
+                                        data-pic-id="{{ row.penanggung_jawab }}"
+                                        data-pic-name="{{ row.nama_pengguna or default_pic_name }}"
+                                        data-last-contact="{{ row.tanggal_kontak_terakhir or '' }}"
+                                        data-next-followup="{{ row.tanggal_tindak_lanjut_berikutnya or '' }}"
+                                        data-summary="{{ row.ringkasan_kondisi or '' }}"
+                                        data-next-step="{{ row.langkah_berikutnya or '' }}"
+                                        data-whatsapp="{{ wa_link(row.nomor_whatsapp, row.nama_member, 'follow up perkembangan kelas') }}"
+                                    >Detail</button>
+                                    <a class="button button-primary" target="_blank" rel="noopener noreferrer" href="{{ wa_link(row.nomor_whatsapp, row.nama_member, 'follow up perkembangan kelas') }}">WhatsApp</a>
+                                    <details class="ops-action-menu">
+                                        <summary class="button button-neutral">Tindakan</summary>
+                                        <div class="ops-action-menu-panel">
+                                            <a class="button button-secondary" href="{{ url_for('member_detail', member_id=row.id_member) }}">Detail Lengkap</a>
+                                            <a class="button button-neutral" href="{{ url_for('member_edit', member_id=row.id_member) }}">Edit Penuh</a>
+                                        </div>
+                                    </details>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="9" class="empty-cell">Belum ada data member untuk filter ini.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="ops-pagination">
+            <div class="ops-pagination-info">Menampilkan {{ pagination.start }}-{{ pagination.end }} dari {{ pagination.total }} member</div>
+            <div class="ops-pagination-links">
+                {% if pagination.has_prev %}<a class="button button-secondary" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.prev_page) }}">Prev</a>{% endif %}
+                {% for page_number in range(1, pagination.total_pages + 1) %}{% if page_number == 1 or page_number == pagination.total_pages or (page_number >= pagination.page - 2 and page_number <= pagination.page + 2) %}<a class="button {% if page_number == pagination.page %}button-primary{% else %}button-secondary{% endif %}" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=page_number) }}">{{ page_number }}</a>{% endif %}{% endfor %}
+                {% if pagination.has_next %}<a class="button button-secondary" href="{{ url_for('members_page', q=keyword, status=selected_status, pic_id=selected_pic_id, brand=selected_brand, overdue_only='1' if overdue_only else '', per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.next_page) }}">Next</a>{% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<dialog id="member-modal" class="ops-modal">
+    <form method="dialog" class="ops-modal-shell"><div class="ops-modal-header"><div><p class="prospect-label">Detail Member</p><h3 id="member-modal-name">Member</h3><p id="member-modal-meta" class="prospect-meta"></p></div><button class="button button-secondary" type="submit">Tutup</button></div></form>
+    <div class="ops-modal-body">
+        <div class="ops-modal-summary">
+            <div class="prospect-status-grid">
+                <div class="prospect-status-item"><span>Status Member</span><strong id="member-modal-status"></strong></div>
+                <div class="prospect-status-item"><span>Progress</span><strong id="member-modal-progress"></strong></div>
+                <div class="prospect-status-item"><span>PIC CRM</span><strong id="member-modal-pic"></strong></div>
+                <div class="prospect-status-item"><span>Kontak Terakhir</span><strong id="member-modal-last-contact"></strong></div>
+                <div class="prospect-status-item"><span>Next Follow Up</span><strong id="member-modal-next-followup"></strong></div>
+                <div class="prospect-status-item"><span>Potensi</span><strong id="member-modal-potential"></strong></div>
+            </div>
+            <div class="ops-modal-history">
+                <h4>Ringkasan Relasi</h4>
+                <div class="list-stack">
+                    <div class="list-item"><strong>Ringkasan Kondisi</strong><p id="member-modal-summary"></p></div>
+                    <div class="list-item"><strong>Langkah Berikutnya</strong><p id="member-modal-next-step"></p></div>
+                </div>
+            </div>
+        </div>
+        <div class="ops-modal-form-wrap">
+            <form id="member-modal-form" class="prospect-followup-form" method="post">
+                <input type="hidden" name="action" value="quick_update">
+                <input type="hidden" name="member_id" id="member-modal-id" value="">
+                <div class="prospect-form-grid">
+                    <label>Status Member<select name="status_member" id="member-modal-status-input">{% for option in status_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label>
+                    <label>Progress<select name="tahap_progress" id="member-modal-progress-input">{% for option in progress_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label>
+                    <label>PIC<select name="penanggung_jawab" id="member-modal-pic-input">{% for user in users %}<option value="{{ user.id_pengguna }}">{{ user.nama_pengguna }}</option>{% endfor %}</select></label>
+                    <label>Potensi<select name="kategori_potensi" id="member-modal-potential-input">{% for option in potential_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label>
+                    <label>Kontak Terakhir<input type="date" name="tanggal_kontak_terakhir" id="member-modal-last-contact-input"></label>
+                    <label>Next Follow Up<input type="date" name="tanggal_tindak_lanjut_berikutnya" id="member-modal-next-followup-input"></label>
+                    <label><span>Sudah Mulai Praktik</span><select name="sudah_mulai_praktik" id="member-modal-praktik-input"><option value="0">Belum</option><option value="1">Sudah</option></select></label>
+                    <label class="prospect-form-note">Ringkasan Kondisi<textarea name="ringkasan_kondisi" id="member-modal-summary-input" rows="3"></textarea></label>
+                    <label class="prospect-form-note">Langkah Berikutnya<textarea name="langkah_berikutnya" id="member-modal-next-step-input" rows="3"></textarea></label>
+                </div>
+                <div class="ops-modal-actions"><button class="button button-success" type="submit">Simpan Update</button><a id="member-modal-wa" class="button button-primary" target="_blank" rel="noopener noreferrer" href="#">WhatsApp</a></div>
+            </form>
+            <div class="ops-modal-secondary-actions"><a id="member-modal-detail-link" class="button button-secondary" href="#">Buka Detail Lengkap</a><a id="member-modal-edit-link" class="button button-neutral" href="#">Edit Penuh</a></div>
+        </div>
+    </div>
+</dialog>
+
+<script>
+(() => {
+  const selectAll = document.getElementById("select-all-members");
+  const selectors = [...document.querySelectorAll(".member-row-selector")];
+  const countNode = document.getElementById("member-bulk-selection-count");
+  const form = document.getElementById("member-bulk-action-form");
+  const idsInput = document.getElementById("member-bulk-selected-ids");
+  const actionSelect = document.getElementById("member-bulk-action");
+  const picInput = document.getElementById("member-bulk-pic");
+  const statusInput = document.getElementById("member-bulk-status");
+  const dateInput = document.getElementById("member-bulk-date");
+  const modal = document.getElementById("member-modal");
+
+  const updateCount = () => countNode.textContent = `${selectors.filter((item) => item.checked).length} dipilih`;
+  const selectedIds = () => selectors.filter((item) => item.checked).map((item) => item.value);
+  const syncBulkUi = () => {
+    const mode = actionSelect.value;
+    picInput.style.display = mode === "assign_pic" ? "block" : "none";
+    statusInput.style.display = mode === "status_member" ? "block" : "none";
+    dateInput.style.display = mode === "schedule_followup" ? "block" : "none";
+  };
+
+  if (selectAll) selectAll.addEventListener("change", () => { selectors.forEach((item) => item.checked = selectAll.checked); updateCount(); });
+  selectors.forEach((item) => item.addEventListener("change", updateCount));
+  actionSelect.addEventListener("change", syncBulkUi);
+  syncBulkUi();
+
+  form.addEventListener("submit", (event) => {
+    const ids = selectedIds();
+    if (!ids.length) {
+      event.preventDefault();
+      window.alert("Pilih minimal satu member terlebih dahulu.");
+      return;
+    }
+    idsInput.value = ids.join(",");
+    if (actionSelect.value === "export_selected") {
+      event.preventDefault();
+      const params = new URLSearchParams({ ids: ids.join(","), q: "{{ keyword }}", status: "{{ selected_status }}", pic_id: "{{ selected_pic_id }}", brand: "{{ selected_brand }}", overdue_only: "{{ '1' if overdue_only else '' }}" });
+      window.location.href = `/members/export?${params.toString()}`;
+    }
+  });
+
+  document.querySelectorAll(".open-member-modal").forEach((button) => {
+    button.addEventListener("click", () => {
+      const data = button.dataset;
+      document.getElementById("member-modal-id").value = data.memberId;
+      document.getElementById("member-modal-name").textContent = data.name;
+      document.getElementById("member-modal-meta").textContent = `${data.phone}${data.city ? ' | ' + data.city : ''}`;
+      document.getElementById("member-modal-status").textContent = data.statusMember;
+      document.getElementById("member-modal-progress").textContent = data.progress;
+      document.getElementById("member-modal-pic").textContent = data.picName;
+      document.getElementById("member-modal-last-contact").textContent = data.lastContact || '-';
+      document.getElementById("member-modal-next-followup").textContent = data.nextFollowup || '-';
+      document.getElementById("member-modal-potential").textContent = data.potential;
+      document.getElementById("member-modal-summary").textContent = data.summary || '-';
+      document.getElementById("member-modal-next-step").textContent = data.nextStep || '-';
+      document.getElementById("member-modal-status-input").value = data.statusMember;
+      document.getElementById("member-modal-progress-input").value = data.progress;
+      document.getElementById("member-modal-pic-input").value = data.picId;
+      document.getElementById("member-modal-potential-input").value = data.potential;
+      document.getElementById("member-modal-last-contact-input").value = data.lastContact || '';
+      document.getElementById("member-modal-next-followup-input").value = data.nextFollowup || '';
+      document.getElementById("member-modal-praktik-input").value = data.praktik || '0';
+      document.getElementById("member-modal-summary-input").value = data.summary || '';
+      document.getElementById("member-modal-next-step-input").value = data.nextStep || '';
+      document.getElementById("member-modal-wa").href = data.whatsapp || '#';
+      document.getElementById("member-modal-detail-link").href = `/members/${data.memberId}`;
+      document.getElementById("member-modal-edit-link").href = `/members/${data.memberId}/edit`;
+      if (typeof modal.showModal === "function") modal.showModal(); else modal.setAttribute("open", "open");
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Detail Peluang Lanjutan | CRM Tower{% endblock %}
+{% block heading %}Detail Peluang Lanjutan{% endblock %}
+{% block topbar_actions %}
+<a class="button" href="{{ url_for('orderonline_page') }}">Kembali</a>
+<a class="button button-primary" target="_blank" rel="noopener noreferrer" href="{{ wa_link(detail.phone, detail.customer_name, detail.product, detail.followup_status or 'Belum Dihubungi') }}">WhatsApp</a>
+{% endblock %}
+{% block content %}
+<section class="object-header panel">
+    <div class="object-header-main">
+        <div>
+            <p class="object-kicker">Prospek Program Lanjutan</p>
+            <h2>{{ detail.customer_name }}</h2>
+            <p class="page-subtitle">{{ detail.phone }} | {{ detail.email or '-' }} | Order {{ detail.order_id }}</p>
+        </div>
+        <div class="object-statuses">
+            <span class="status-badge status-{{ status_tone(detail.priority_label) }}">{{ detail.priority_label }}</span>
+            <span class="status-badge status-{{ status_tone(detail.followup_status or 'Belum Dihubungi') }}">{{ detail.followup_status or 'Belum Dihubungi' }}</span>
+            {% if detail.followup_result %}
+                <span class="status-badge status-{{ status_tone(detail.followup_result) }}">{{ detail.followup_result }}</span>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="grid object-layout">
+    <article class="panel object-section">
+        <div class="panel-header"><h2>Informasi Lead</h2></div>
+        <div class="detail-stack">
+            <div><span>Produk</span><strong>{{ detail.product }}</strong></div>
+            <div><span>Harga</span><strong>Rp {{ '{:,.0f}'.format(detail.product_price or 0).replace(',', '.') }}</strong></div>
+            <div><span>Status Sync</span><strong>{{ detail.sync_status }}</strong></div>
+            <div><span>Prioritas</span><strong>{{ detail.priority_label }} ({{ detail.priority_score }})</strong></div>
+            <div><span>Reminder</span><strong>{{ detail.reminder_text or '-' }}</strong></div>
+            <div><span>Follow Up Berikutnya</span><strong>{{ detail.next_followup_date or '-' }}</strong></div>
+        </div>
+        <div class="note-box">
+            <h3>Catatan Follow Up</h3>
+            <p>{{ detail.followup_notes or '-' }}</p>
+            <h3>Template WhatsApp</h3>
+            <p>{{ detail.whatsapp_template }}</p>
+        </div>
+    </article>
+
+    <article class="panel object-section">
+        <div class="panel-header"><h2>Update Follow Up</h2></div>
+        <form class="form-grid" method="post" action="{{ url_for('orderonline_page') }}">
+            <input type="hidden" name="action" value="followup_status">
+            <input type="hidden" name="import_id" value="{{ detail.id_import }}">
+            <label>
+                Status Follow Up
+                <select name="followup_status">
+                    {% for option in followup_status_options %}
+                        <option value="{{ option }}" {% if (detail.followup_status or 'Belum Dihubungi') == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                PIC
+                <select name="pic_id">
+                    {% for user in users %}
+                        <option value="{{ user.id_pengguna }}">{{ user.nama_pengguna }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Channel
+                <select name="contact_channel">
+                    {% for option in contact_channel_options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Hasil Follow Up
+                <select name="followup_result">
+                    <option value="">Pilih hasil</option>
+                    {% for option in followup_result_options %}
+                        <option value="{{ option }}" {% if detail.followup_result == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Next Follow Up
+                <input type="date" name="next_followup_date" value="{{ detail.next_followup_date or '' }}">
+            </label>
+            <label class="span-2">
+                Catatan
+                <textarea name="followup_notes" rows="4">{{ detail.followup_notes or '' }}</textarea>
+            </label>
+            <div class="span-2 form-actions">
+                <button class="button button-primary" type="submit">Simpan Update</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="panel object-section span-2">
+        <div class="panel-header"><h2>Histori Kontak</h2></div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Aksi</th>
+                        <th>Channel</th>
+                        <th>Outcome</th>
+                        <th>PIC</th>
+                        <th>Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in detail.logs %}
+                        <tr>
+                            <td>{{ row.created_at }}</td>
+                            <td>{{ row.action_type }}</td>
+                            <td>{{ row.contact_channel or '-' }}</td>
+                            <td>{{ row.outcome or '-' }}</td>
+                            <td>{{ row.nama_pengguna or '-' }}</td>
+                            <td>{{ row.notes or '-' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="empty-cell">Belum ada histori kontak.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

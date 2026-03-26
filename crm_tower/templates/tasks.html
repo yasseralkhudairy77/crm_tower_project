@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Tugas | CRM Tower{% endblock %}
+{% block heading %}Daftar Tugas CRM{% endblock %}
+{% block content %}
+<section class="grid grid-metrics compact-metrics">
+    <article class="metric-card"><span>Total Tugas</span><strong>{{ task_stats.total }}</strong></article>
+    <article class="metric-card"><span>Terlambat</span><strong>{{ task_stats.overdue }}</strong></article>
+    <article class="metric-card"><span>Selesai</span><strong>{{ task_stats.done }}</strong></article>
+</section>
+
+<section class="grid grid-two">
+    <article class="panel">
+        <div class="panel-header"><h2>Tambah Tugas</h2></div>
+        <form class="form-grid" method="post">
+            <label>
+                Member
+                <select name="member_id">
+                    {% for row in members %}
+                        <option value="{{ row.id_member }}">{{ row.nama_member }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Penanggung Jawab
+                <select name="penanggung_jawab">
+                    {% for row in users %}
+                        <option value="{{ row.id_pengguna }}">{{ row.nama_pengguna }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Jenis Tugas
+                <select name="jenis_tugas">
+                    {% for option in task_types %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Prioritas
+                <select name="prioritas">
+                    {% for option in priorities %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Jatuh Tempo
+                <input type="date" name="tanggal_jatuh_tempo" value="{{ today_str() }}">
+            </label>
+            <label class="span-2">
+                Catatan
+                <textarea name="catatan_tugas" rows="4"></textarea>
+            </label>
+            <div class="span-2 form-actions">
+                <button class="button button-primary" type="submit">Tambah Tugas</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2>Tugas Hari Ini</h2></div>
+        <div class="list-stack compact">
+            {% for row in tasks_today %}
+                <div class="list-item inline-action">
+                    <div>
+                        <strong>{{ row.nama_member }}</strong>
+                        <span>{{ row.jenis_tugas }}</span>
+                        <div class="status-row">
+                            <span class="status-badge status-{{ status_tone(row.prioritas) }}">{{ row.prioritas }}</span>
+                            <span class="status-badge status-neutral">{{ row.nama_pengguna }}</span>
+                        </div>
+                    </div>
+                    {% if row.status_tugas != 'Selesai' %}
+                        <form method="post" action="{{ url_for('tasks_complete', task_id=row.id_tugas) }}">
+                            <button class="button" type="submit">Selesaikan</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="empty">Belum ada tugas hari ini.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="grid grid-two">
+    <article class="panel">
+        <div class="panel-header"><h2>Tugas Terlambat</h2></div>
+        <div class="list-stack compact">
+            {% for row in tasks_overdue %}
+                <div class="list-item inline-action">
+                    <div>
+                        <strong>{{ row.nama_member }}</strong>
+                        <span>{{ row.jenis_tugas }}</span>
+                        <div class="status-row">
+                            <span class="status-badge status-critical">{{ row.status_tugas }}</span>
+                            <span class="status-badge status-neutral">{{ row.tanggal_jatuh_tempo }}</span>
+                            <span class="status-badge status-neutral">{{ row.nama_pengguna }}</span>
+                        </div>
+                    </div>
+                    <form method="post" action="{{ url_for('tasks_complete', task_id=row.id_tugas) }}">
+                        <button class="button" type="submit">Selesaikan</button>
+                    </form>
+                </div>
+            {% else %}
+                <p class="empty">Tidak ada tugas terlambat.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header"><h2>Semua Tugas</h2></div>
+        <div class="list-report-bar">
+            <div>
+                <h3>Task List Report</h3>
+                <p>Pantau status kerja tim berdasarkan PIC dan progres tugas.</p>
+            </div>
+        </div>
+        <form class="toolbar section-toolbar" method="get">
+            <select name="status">
+                <option value="">Semua status</option>
+                <option value="Belum Dikerjakan" {% if selected_status == 'Belum Dikerjakan' %}selected{% endif %}>Belum Dikerjakan</option>
+                <option value="Sedang Dikerjakan" {% if selected_status == 'Sedang Dikerjakan' %}selected{% endif %}>Sedang Dikerjakan</option>
+                <option value="Terlambat" {% if selected_status == 'Terlambat' %}selected{% endif %}>Terlambat</option>
+                <option value="Selesai" {% if selected_status == 'Selesai' %}selected{% endif %}>Selesai</option>
+            </select>
+            <select name="pic_id">
+                <option value="">Semua PIC</option>
+                {% for row in users %}
+                    <option value="{{ row.id_pengguna }}" {% if selected_pic_id == row.id_pengguna|string %}selected{% endif %}>{{ row.nama_pengguna }}</option>
+                {% endfor %}
+            </select>
+            <button class="button" type="submit">Filter</button>
+            <a class="button" href="{{ url_for('tasks_page') }}">Reset</a>
+        </form>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Tugas</th>
+                        <th>Status</th>
+                        <th>PIC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in all_tasks %}
+                        <tr>
+                            <td>{{ row.nama_member }}</td>
+                            <td>{{ row.jenis_tugas }}<div class="muted">{{ row.tanggal_jatuh_tempo }}</div></td>
+                            <td><span class="status-badge status-{{ status_tone(row.status_tugas) }}">{{ row.status_tugas }}</span></td>
+                            <td>{{ row.nama_pengguna }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="empty-cell">Belum ada tugas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}Edit Member{% else %}Tambah Member{% endif %} | CRM Tower{% endblock %}
+{% block heading %}{% if mode == 'edit' %}Edit Member{% else %}Tambah Member Baru{% endif %}{% endblock %}
+{% block content %}
+<section class="panel">
+    <form class="form-grid" method="post">
+        {% if mode == 'create' %}
+            <label>
+                Nama Member
+                <input name="nama_member" value="{{ field_value(values, 'nama_member') }}" required>
+            </label>
+            <label>
+                Nomor WhatsApp
+                <input name="nomor_whatsapp" value="{{ field_value(values, 'nomor_whatsapp') }}" required>
+            </label>
+            <label>
+                Sumber Data
+                <select name="id_sumber" required>
+                    <option value="">Pilih sumber</option>
+                    {% for row in sources %}
+                        <option value="{{ row.id_sumber }}" {% if field_value(values, 'id_sumber')|string == row.id_sumber|string %}selected{% endif %}>{{ row.nama_sumber }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+
+        <label>
+            Email
+            <input type="email" name="email" value="{{ field_value(values, 'email') }}">
+        </label>
+        <label>
+            Kota
+            <input name="kota" value="{{ field_value(values, 'kota') }}">
+        </label>
+        <label>
+            Brand Utama
+            <select name="brand_utama">
+                <option value="">Pilih brand</option>
+                {% for option in brand_options %}
+                    <option value="{{ option }}" {% if field_value(values, 'brand_utama') == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+                <option value="Umum" {% if field_value(values, 'brand_utama') == 'Umum' %}selected{% endif %}>Umum</option>
+            </select>
+        </label>
+        <label>
+            Penanggung Jawab
+            <select name="penanggung_jawab" required>
+                <option value="">Pilih PIC</option>
+                {% for row in users %}
+                    <option value="{{ row.id_pengguna }}" {% if field_value(values, 'penanggung_jawab')|string == row.id_pengguna|string %}selected{% endif %}>{{ row.nama_pengguna }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Status Member
+            <select name="status_member" required>
+                {% for option in status_member_options %}
+                    <option value="{{ option }}" {% if field_value(values, 'status_member') == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Tahap Progress
+            <select name="tahap_progress" required>
+                {% for option in progress_options %}
+                    <option value="{{ option }}" {% if field_value(values, 'tahap_progress') == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Kategori Potensi
+            <select name="kategori_potensi" required>
+                {% for option in potential_options %}
+                    <option value="{{ option }}" {% if field_value(values, 'kategori_potensi') == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Tanggal Kontak Terakhir
+            <input type="date" name="tanggal_kontak_terakhir" value="{{ field_value(values, 'tanggal_kontak_terakhir') }}">
+        </label>
+        <label>
+            Tanggal Tindak Lanjut Berikutnya
+            <input type="date" name="tanggal_tindak_lanjut_berikutnya" value="{{ field_value(values, 'tanggal_tindak_lanjut_berikutnya') }}" required>
+        </label>
+        <label>
+            Sudah Mulai Praktik
+            <select name="sudah_mulai_praktik">
+                <option value="0" {% if field_value(values, 'sudah_mulai_praktik', 0)|int == 0 %}selected{% endif %}>Belum</option>
+                <option value="1" {% if field_value(values, 'sudah_mulai_praktik', 0)|int == 1 %}selected{% endif %}>Ya</option>
+            </select>
+        </label>
+        {% if mode == 'edit' %}
+            <label>
+                Status Aktif
+                <select name="aktif">
+                    <option value="1" {% if field_value(values, 'aktif', 1)|int == 1 %}selected{% endif %}>Aktif</option>
+                    <option value="0" {% if field_value(values, 'aktif', 1)|int == 0 %}selected{% endif %}>Nonaktif</option>
+                </select>
+            </label>
+        {% endif %}
+        <label class="span-2">
+            Ringkasan Kondisi
+            <textarea name="ringkasan_kondisi" rows="4">{{ field_value(values, 'ringkasan_kondisi') }}</textarea>
+        </label>
+        <label class="span-2">
+            Langkah Berikutnya
+            <textarea name="langkah_berikutnya" rows="4">{{ field_value(values, 'langkah_berikutnya') }}</textarea>
+        </label>
+
+        <div class="span-2 form-actions">
+            <button class="button button-primary" type="submit">Simpan</button>
+            <a class="button" href="{% if mode == 'edit' %}{{ url_for('member_detail', member_id=member.id_member) }}{% else %}{{ url_for('members_page') }}{% endif %}">Batal</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

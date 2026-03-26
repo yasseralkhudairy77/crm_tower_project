@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}{{ detail.member.nama_member }} | CRM Tower{% endblock %}
+{% block heading %}{{ detail.member.nama_member }}{% endblock %}
+{% block topbar_actions %}
+<a class="button" target="_blank" rel="noopener noreferrer" href="{{ wa_link(detail.member.nomor_whatsapp, detail.member.nama_member, 'program lanjutan') }}">WhatsApp</a>
+<a class="button button-primary" href="{{ url_for('member_edit', member_id=detail.member.id_member) }}">Edit Member</a>
+{% endblock %}
+{% block content %}
+<section class="object-header panel">
+    <div class="object-header-main">
+        <div>
+            <p class="object-kicker">Member Object Page</p>
+            <h2>{{ detail.member.nama_member }}</h2>
+            <p class="page-subtitle">{{ detail.member.nomor_whatsapp }} | {{ detail.member.kota or 'Tanpa kota' }} | Brand {{ detail.member.brand_utama or 'Umum' }} | PIC {{ detail.member.nama_pengguna }}</p>
+        </div>
+        <div class="object-statuses">
+            <span class="status-badge status-{{ status_tone(detail.member.status_member) }}">{{ detail.member.status_member }}</span>
+            <span class="status-badge status-{{ status_tone(detail.member.status_keterlambatan) }}">{{ detail.member.status_keterlambatan }}</span>
+            <span class="status-badge status-{{ status_tone(detail.member.kategori_potensi) }}">{{ detail.member.kategori_potensi }}</span>
+        </div>
+    </div>
+</section>
+
+<section class="grid object-layout">
+    <article class="panel object-section">
+        <div class="panel-header"><h2>Informasi Utama</h2></div>
+        <div class="detail-stack">
+            <div><span>WhatsApp</span><strong>{{ detail.member.nomor_whatsapp }}</strong></div>
+            <div><span>Email</span><strong>{{ detail.member.email or '-' }}</strong></div>
+            <div><span>Kota</span><strong>{{ detail.member.kota or '-' }}</strong></div>
+            <div><span>Brand Utama</span><strong>{{ detail.member.brand_utama or 'Umum' }}</strong></div>
+            <div><span>PIC</span><strong>{{ detail.member.nama_pengguna }}</strong></div>
+            <div><span>Status</span><strong>{{ detail.member.status_member }}</strong></div>
+            <div><span>Progress</span><strong>{{ detail.member.tahap_progress }}</strong></div>
+            <div><span>Potensi</span><strong>{{ detail.member.kategori_potensi }} ({{ detail.member.nilai_potensi }})</strong></div>
+            <div><span>Tindak lanjut</span><strong>{{ detail.member.tanggal_tindak_lanjut_berikutnya }} | {{ detail.member.status_keterlambatan }}</strong></div>
+        </div>
+        <div class="note-box">
+            <h3>Ringkasan Kondisi</h3>
+            <p>{{ detail.member.ringkasan_kondisi or '-' }}</p>
+            <h3>Langkah Berikutnya</h3>
+            <p>{{ detail.member.langkah_berikutnya or '-' }}</p>
+        </div>
+    </article>
+
+    <article class="panel object-section">
+        <div class="panel-header"><h2>Tambah Catatan</h2></div>
+        <form class="form-grid" method="post" action="{{ url_for('member_add_note', member_id=detail.member.id_member) }}">
+            <label>
+                Jenis Catatan
+                <select name="jenis_catatan">
+                    {% for option in note_types %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Dibuat Oleh
+                <select name="dibuat_oleh">
+                    {% for row in users %}
+                        <option value="{{ row.id_pengguna }}">{{ row.nama_pengguna }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="span-2">
+                Isi Catatan
+                <textarea name="isi_catatan" rows="4" required></textarea>
+            </label>
+            <div class="span-2 form-actions">
+                <button class="button button-primary" type="submit">Tambah Catatan</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="panel object-section span-2">
+        <div class="panel-header"><h2>Jejak Lintas Brand</h2></div>
+        <div class="dashboard-chip-row">
+            {% for row in brand_summary %}
+                <span class="status-badge status-neutral">{{ row.brand }} | {{ row.purchases }} pembelian | {{ row.followups }} follow up</span>
+            {% else %}
+                <span class="status-badge status-neutral">Belum ada histori lintas brand</span>
+            {% endfor %}
+        </div>
+        <div class="list-stack compact">
+            {% for row in cross_brand_followups %}
+                <div class="list-item">
+                    <strong>{{ row.brand_name or 'Umum' }} | {{ row.product }}</strong>
+                    <div class="status-row">
+                        <span class="status-badge status-{{ status_tone(row.followup_status) }}">{{ row.followup_status }}</span>
+                        <span class="status-badge status-{{ status_tone(row.sync_status) }}">{{ row.sync_status }}</span>
+                        <span class="status-badge status-neutral">{{ row.paid_at_raw or row.created_at_raw or '-' }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <p class="empty">Belum ada aktivitas OrderOnline lain dengan nomor WhatsApp ini.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel object-section span-2">
+        <div class="panel-header"><h2>Riwayat Pembelian</h2></div>
+        <div class="list-stack compact">
+            {% for row in detail.pembelian %}
+                <div class="list-item">
+                    <strong>{{ row.nama_program }}</strong>
+                    <div class="status-row">
+                        <span class="status-badge status-neutral">{{ row.brand_name or detail.member.brand_utama or 'Umum' }}</span>
+                        <span class="status-badge status-{{ status_tone(row.status_pembelian) }}">{{ row.status_pembelian }}</span>
+                        <span class="status-badge status-neutral">{{ row.tanggal_beli }}</span>
+                        <span class="status-badge status-neutral">{{ row.nomor_order or '-' }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <p class="empty">Belum ada riwayat pembelian.</p>
+            {% endfor %}
+        </div>
+        <form class="form-grid form-section" method="post" action="{{ url_for('member_add_purchase', member_id=detail.member.id_member) }}">
+            <label>
+                Program
+                <select name="program_id">
+                    {% for row in programs %}
+                        <option value="{{ row.id_program }}">{{ row.nama_program }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Tanggal Beli
+                <input type="date" name="tanggal_beli" value="{{ today_str() }}">
+            </label>
+            <label>
+                Nomor Order
+                <input name="nomor_order">
+            </label>
+            <label>
+                Nilai Transaksi
+                <input type="number" step="0.01" name="nilai_transaksi">
+            </label>
+            <label>
+                Brand
+                <select name="brand_name">
+                    <option value="">Ikuti brand utama member</option>
+                    {% for option in brand_options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Status Pembelian
+                <input name="status_pembelian" value="berhasil">
+            </label>
+            <label>
+                Sumber Transaksi
+                <input name="sumber_transaksi" value="OrderOnline">
+            </label>
+            <label class="span-2">
+                Catatan
+                <textarea name="catatan_pembelian" rows="3"></textarea>
+            </label>
+            <div class="span-2 form-actions">
+                <button class="button" type="submit">Tambah Pembelian</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="panel object-section">
+        <div class="panel-header"><h2>Catatan & Aktivitas</h2></div>
+        <div class="list-stack compact">
+            {% for row in detail.catatan %}
+                <div class="list-item">
+                    <strong>{{ row.jenis_catatan }}</strong>
+                    <span>{{ row.tanggal_catatan }} | {{ row.nama_pengguna }}</span>
+                    <p>{{ row.isi_catatan }}</p>
+                </div>
+            {% else %}
+                <p class="empty">Belum ada catatan.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel object-section">
+        <div class="panel-header"><h2>Tugas dan Keluhan</h2></div>
+        <div class="subsection">
+            <h3>Tugas</h3>
+            {% for row in tasks %}
+                <div class="list-item">
+                    <strong>{{ row.jenis_tugas }}</strong>
+                    <div class="status-row">
+                        <span class="status-badge status-{{ status_tone(row.status_tugas) }}">{{ row.status_tugas }}</span>
+                        <span class="status-badge status-neutral">{{ row.tanggal_jatuh_tempo }}</span>
+                        <span class="status-badge status-neutral">{{ row.nama_pengguna }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <p class="empty">Belum ada tugas untuk member ini.</p>
+            {% endfor %}
+        </div>
+        <div class="subsection">
+            <h3>Keluhan</h3>
+            {% for row in issues %}
+                <div class="list-item">
+                    <strong>{{ row.jenis_masalah }}</strong>
+                    <div class="status-row">
+                        <span class="status-badge status-{{ status_tone(row.status_penanganan) }}">{{ row.status_penanganan }}</span>
+                        <span class="status-badge status-{{ status_tone(row.prioritas) }}">{{ row.prioritas }}</span>
+                        <span class="status-badge status-neutral">{{ row.nama_pengguna }}</span>
+                    </div>
+                    <p>{{ row.detail_masalah }}</p>
+                </div>
+            {% else %}
+                <p class="empty">Belum ada keluhan untuk member ini.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel object-section">
+        <div class="panel-header"><h2>Webinar & Kendala Terbaru</h2></div>
+        <div class="subsection">
+            <h3>Webinar</h3>
+            {% for row in webinar_records %}
+                <div class="list-item">
+                    <strong>{{ row.nama_program }}</strong>
+                    <div class="status-row">
+                        <span class="status-badge status-neutral">{{ row.tanggal_webinar }}</span>
+                        <span class="status-badge status-{{ status_tone(row.status_kehadiran) }}">{{ row.status_kehadiran }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <p class="empty">Belum ada riwayat webinar.</p>
+            {% endfor %}
+        </div>
+        <div class="subsection">
+            <h3>Kendala Terbaru</h3>
+            {% if detail.kendala_terbaru %}
+                <div class="list-item">
+                    <strong>{{ detail.kendala_terbaru.kategori_kendala }}</strong>
+                    <div class="status-row">
+                        <span class="status-badge status-{{ status_tone(detail.kendala_terbaru.tingkat_urgensi) }}">{{ detail.kendala_terbaru.tingkat_urgensi }}</span>
+                        <span class="status-badge status-{{ status_tone(detail.kendala_terbaru.status_kendala) }}">{{ detail.kendala_terbaru.status_kendala }}</span>
+                    </div>
+                    <p>{{ detail.kendala_terbaru.detail_kendala }}</p>
+                </div>
+            {% else %}
+                <p class="empty">Belum ada kendala tercatat.</p>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

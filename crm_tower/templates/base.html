@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}CRM Tower{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=72:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+    <header class="app-header">
+        <div class="app-header-inner">
+            <a class="brand" href="{{ url_for('dashboard') }}">
+                <span class="brand-kicker">CRM Workspace</span>
+                <strong>CRM Tower</strong>
+            </a>
+            <div class="app-header-tools">
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar-nav">Menu</button>
+                <div class="app-header-meta">
+                    <span>Enterprise CRM</span>
+                    <small>v{{ app_version }}</small>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-shell">
+        <aside class="sidebar" id="sidebar-nav">
+            <div class="sidebar-title">Navigasi</div>
+            <nav class="nav">
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('members_page') }}">Member</a>
+                <a href="{{ url_for('orderonline_page') }}">Peluang Lanjutan</a>
+                <a href="{{ url_for('issues_page') }}">Keluhan</a>
+                <a href="{{ url_for('obstacles_page') }}">Kendala</a>
+                <a href="{{ url_for('reports_page') }}">Laporan</a>
+                <a href="{{ url_for('backup_settings_page') }}">Backup</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">{% block eyebrow %}Operasional CRM{% endblock %}</p>
+                    <h1>{% block heading %}CRM Tower{% endblock %}</h1>
+                    <p class="page-subtitle">Workspace operasional untuk monitoring member, isu, dan prospek program lanjutan tim CRM.</p>
+                </div>
+                <div class="topbar-actions">
+                    {% block topbar_actions %}{% endblock %}
+                </div>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <section class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </section>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        (() => {
+            const body = document.body;
+            const toggle = document.querySelector(".nav-toggle");
+            const sidebar = document.getElementById("sidebar-nav");
+            if (!toggle || !sidebar) {
+                return;
+            }
+
+            const closeNav = () => {
+                body.classList.remove("nav-open");
+                toggle.setAttribute("aria-expanded", "false");
+            };
+
+            toggle.addEventListener("click", () => {
+                const nextOpen = !body.classList.contains("nav-open");
+                body.classList.toggle("nav-open", nextOpen);
+                toggle.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+            });
+
+            sidebar.querySelectorAll("a").forEach((link) => {
+                link.addEventListener("click", () => {
+                    if (window.innerWidth <= 1080) {
+                        closeNav();
+                    }
+                });
+            });
+
+            window.addEventListener("resize", () => {
+                if (window.innerWidth > 1080) {
+                    closeNav();
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
