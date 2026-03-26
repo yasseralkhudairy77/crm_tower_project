@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import socket
 
 from . import __version__
 from .backup import auto_backup_if_due
@@ -126,12 +127,25 @@ def seed_demo_data() -> None:
         add_issue(created[0], "Pertanyaan", "Menanyakan urutan langkah awal ekspor dan impor.", "Sedang", sabrina)
 
 
+def detect_local_ip() -> str:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            ip_address = sock.getsockname()[0]
+            if ip_address:
+                return ip_address
+    except OSError:
+        pass
+    return "127.0.0.1"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="CRM Tower CLI")
     parser.add_argument("--init-db", action="store_true", help="Inisialisasi database dan data referensi")
     parser.add_argument("--seed-demo", action="store_true", help="Isi data contoh/demo")
     parser.add_argument("--no-cli", action="store_true", help="Jangan masuk mode interaktif")
     parser.add_argument("--web", action="store_true", help="Jalankan versi webapp")
+    parser.add_argument("--lan", action="store_true", help="Jalankan webapp agar bisa diakses perangkat lain di WiFi yang sama")
     parser.add_argument("--host", default="127.0.0.1", help="Host untuk webapp")
     parser.add_argument("--port", type=int, default=5000, help="Port untuk webapp")
     args = parser.parse_args()
@@ -145,8 +159,15 @@ def main() -> None:
         print("Data demo berhasil disiapkan.")
 
     if args.web:
+        host = "0.0.0.0" if args.lan else args.host
+        local_ip = detect_local_ip()
+        print(f"CRM Tower webapp akan berjalan di http://127.0.0.1:{args.port}")
+        if host == "0.0.0.0" and local_ip != "127.0.0.1":
+            print(f"Akses dari device lain di WiFi yang sama: http://{local_ip}:{args.port}")
+        elif host not in {"127.0.0.1", "localhost"}:
+            print(f"Host aktif: http://{host}:{args.port}")
         app = create_app()
-        app.run(host=args.host, port=args.port, debug=True)
+        app.run(host=host, port=args.port, debug=True)
         return
 
     if not args.no_cli:

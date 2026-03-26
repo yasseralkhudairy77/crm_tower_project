@@ -68,6 +68,18 @@ Lalu buka:
 http://127.0.0.1:5000
 ```
 
+Untuk akses dari device lain di WiFi yang sama:
+
+```bash
+python -m crm_tower.main --web --lan
+```
+
+Setelah server jalan, aplikasi akan menampilkan alamat lokal yang bisa dibuka supervisor, misalnya:
+
+```text
+http://192.168.1.10:5000
+```
+
 ## Deploy ke GitHub + PythonAnywhere
 
 Untuk kebutuhan tim kecil dengan 1 supervisor dan 1 CRM, jalur paling sederhana saat ini adalah:
