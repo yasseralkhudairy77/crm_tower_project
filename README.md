@@ -80,6 +80,19 @@ Setelah server jalan, aplikasi akan menampilkan alamat lokal yang bisa dibuka su
 http://192.168.1.10:5000
 ```
 
+Untuk operasional harian yang lebih mudah di laptop CRM, cukup jalankan file:
+
+```text
+4-buka-crm-harian.bat
+```
+
+File ini akan:
+
+- memastikan database dasar siap
+- menampilkan link untuk CRM
+- menampilkan link supervisor di WiFi yang sama
+- lalu menjalankan server CRM
+
 ## Deploy ke GitHub + PythonAnywhere
 
 Untuk kebutuhan tim kecil dengan 1 supervisor dan 1 CRM, jalur paling sederhana saat ini adalah:
