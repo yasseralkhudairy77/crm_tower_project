@@ -2,6 +2,10 @@
 setlocal
 cd /d "%~dp0"
 
+set "GIT_CMD="
+where git >nul 2>nul
+if %errorlevel%==0 set "GIT_CMD=git"
+
 set "PY_CMD="
 where py >nul 2>nul
 if %errorlevel%==0 set "PY_CMD=py -3"
@@ -24,15 +28,27 @@ for /f "usebackq delims=" %%i in (`%PY_CMD% -c "from crm_tower.main import detec
 echo ==========================================
 echo CRM Tower - Buka Operasional Harian
 echo Folder kerja: %cd%
+if defined GIT_CMD echo Git: %GIT_CMD%
 echo Python: %PY_CMD%
 echo ==========================================
 echo.
-echo [1/3] Cek database dan referensi dasar...
+echo [1/4] Sinkronkan source code terbaru...
+if defined GIT_CMD (
+    call %GIT_CMD% pull origin main
+    if errorlevel 1 (
+        echo Git pull gagal. CRM tetap akan mencoba jalan memakai versi lokal yang ada.
+    )
+) else (
+    echo Git tidak ditemukan. Lewati update otomatis.
+)
+
+echo.
+echo [2/4] Cek database dan referensi dasar...
 call %PY_CMD% -m crm_tower.main --init-db --no-cli
 if errorlevel 1 goto :error
 
 echo.
-echo [2/3] Informasi akses hari ini
+echo [3/4] Informasi akses hari ini
 echo CRM buka di laptop ini:
 echo http://127.0.0.1:5000
 echo.
@@ -44,7 +60,7 @@ if defined LOCAL_IP (
     echo Jalankan ipconfig untuk melihat IPv4 Address laptop ini.
 )
 echo.
-echo [3/3] Menjalankan server CRM...
+echo [4/4] Menjalankan server CRM...
 echo Jangan tutup jendela ini selama webapp masih dipakai.
 echo.
 
