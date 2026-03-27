@@ -18,7 +18,7 @@
                 <input type="hidden" name="sync_status" value="Baru">
                 <button class="button button-neutral" type="submit">Import Massal ke CRM</button>
             </form>
-            <a class="button button-secondary" href="{{ url_for('orderonline_export', q=keyword, sync_status=sync_status, followup_status=followup_status or '', brand=brand) }}">Export CSV</a>
+            <a class="button button-secondary" href="{{ url_for('orderonline_export', q=keyword, sync_status=sync_status, followup_status=followup_status or '', brand=brand, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to) }}">Export CSV</a>
         </div>
     </section>
 
@@ -60,7 +60,7 @@
         <div class="panel-header">
             <div>
                 <h2>Filter Prospek</h2>
-                <p class="page-subtitle">Saring prospek berdasarkan nama, produk, PIC, prioritas, status sync, dan status follow up.</p>
+                <p class="page-subtitle">Saring prospek berdasarkan nama, produk, PIC, prioritas, status sync, status follow up, dan tanggal order.</p>
             </div>
         </div>
         <form class="ops-filter-toolbar" method="get">
@@ -71,8 +71,10 @@
             <div class="filter-field"><label for="filter-pic">PIC</label><select id="filter-pic" name="pic_id"><option value="">Semua PIC</option>{% for user in users %}<option value="{{ user.id_pengguna }}" {% if pic_id == user.id_pengguna|string %}selected{% endif %}>{{ user.nama_pengguna }}</option>{% endfor %}</select></div>
             <div class="filter-field"><label for="filter-product">Produk</label><select id="filter-product" name="product"><option value="">Semua produk</option>{% for option in product_options %}<option value="{{ option }}" {% if product == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
             <div class="filter-field"><label for="filter-priority">Prioritas</label><select id="filter-priority" name="priority"><option value="">Semua prioritas</option>{% for option in priority_options %}<option value="{{ option }}" {% if priority == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-order-date-from">Tanggal Order Dari</label><input id="filter-order-date-from" type="date" name="order_date_from" value="{{ order_date_from }}"></div>
+            <div class="filter-field"><label for="filter-order-date-to">Tanggal Order Sampai</label><input id="filter-order-date-to" type="date" name="order_date_to" value="{{ order_date_to }}"></div>
             <div class="filter-field"><label for="filter-per-page">Rows per page</label><select id="filter-per-page" name="per_page">{% for option in per_page_options %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
-            <div class="ops-filter-actions"><button class="button button-primary" type="submit">Filter</button><a class="button button-secondary" href="{{ url_for('orderonline_page') }}">Reset</a><a class="button button-secondary" href="{{ url_for('orderonline_export', q=keyword, sync_status=sync_status, followup_status=followup_status or '', brand=brand) }}">Export CSV</a></div>
+            <div class="ops-filter-actions"><button class="button button-primary" type="submit">Filter</button><a class="button button-secondary" href="{{ url_for('orderonline_page') }}">Reset</a><a class="button button-secondary" href="{{ url_for('orderonline_export', q=keyword, sync_status=sync_status, followup_status=followup_status or '', brand=brand, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to) }}">Export CSV</a></div>
         </form>
     </section>
 
@@ -112,15 +114,15 @@
                 <thead>
                     <tr>
                         <th><input id="select-all-prospects" type="checkbox"></th>
-                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='name', dir='asc' if sort_by != 'name' or sort_dir == 'desc' else 'desc') }}">Lead</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, page=1, sort='name', dir='asc' if sort_by != 'name' or sort_dir == 'desc' else 'desc') }}">Lead</a></th>
                         <th>Produk</th>
-                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='priority', dir='asc' if sort_by != 'priority' or sort_dir == 'desc' else 'desc') }}">Prioritas</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, page=1, sort='priority', dir='asc' if sort_by != 'priority' or sort_dir == 'desc' else 'desc') }}">Prioritas</a></th>
                         <th>Pembayaran</th>
-                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='status', dir='asc' if sort_by != 'status' or sort_dir == 'desc' else 'desc') }}">Status Follow Up</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, page=1, sort='status', dir='asc' if sort_by != 'status' or sort_dir == 'desc' else 'desc') }}">Status Follow Up</a></th>
                         <th>PIC</th>
-                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='sync', dir='asc' if sort_by != 'sync' or sort_dir == 'desc' else 'desc') }}">Sync CRM</a></th>
-                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='order_date', dir='asc' if sort_by != 'order_date' or sort_dir == 'desc' else 'desc') }}">Tanggal Order</a></th>
-                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, page=1, sort='followup_at', dir='asc' if sort_by != 'followup_at' or sort_dir == 'desc' else 'desc') }}">Last Update</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, page=1, sort='sync', dir='asc' if sort_by != 'sync' or sort_dir == 'desc' else 'desc') }}">Sync CRM</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, page=1, sort='order_date', dir='asc' if sort_by != 'order_date' or sort_dir == 'desc' else 'desc') }}">Tanggal Order</a></th>
+                        <th><a class="sort-link" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, page=1, sort='followup_at', dir='asc' if sort_by != 'followup_at' or sort_dir == 'desc' else 'desc') }}">Last Update</a></th>
                         <th>Tindakan</th>
                     </tr>
                 </thead>
@@ -166,9 +168,9 @@
         <div class="ops-pagination">
             <div class="ops-pagination-info">Menampilkan {{ pagination.start }}-{{ pagination.end }} dari {{ pagination.total }} prospek</div>
             <div class="ops-pagination-links">
-                {% if pagination.has_prev %}<a class="button button-secondary" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.prev_page) }}">Prev</a>{% endif %}
-                {% for page_number in range(1, pagination.total_pages + 1) %}{% if page_number == 1 or page_number == pagination.total_pages or (page_number >= pagination.page - 2 and page_number <= pagination.page + 2) %}<a class="button {% if page_number == pagination.page %}button-primary{% else %}button-secondary{% endif %}" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=page_number) }}">{{ page_number }}</a>{% endif %}{% endfor %}
-                {% if pagination.has_next %}<a class="button button-secondary" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.next_page) }}">Next</a>{% endif %}
+                {% if pagination.has_prev %}<a class="button button-secondary" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.prev_page) }}">Prev</a>{% endif %}
+                {% for page_number in range(1, pagination.total_pages + 1) %}{% if page_number == 1 or page_number == pagination.total_pages or (page_number >= pagination.page - 2 and page_number <= pagination.page + 2) %}<a class="button {% if page_number == pagination.page %}button-primary{% else %}button-secondary{% endif %}" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=page_number) }}">{{ page_number }}</a>{% endif %}{% endfor %}
+                {% if pagination.has_next %}<a class="button button-secondary" href="{{ url_for('orderonline_page', q=keyword, brand=brand, sync_status=sync_status, followup_status=followup_status, pic_id=pic_id, product=product, priority=priority, order_date_from=order_date_from, order_date_to=order_date_to, per_page=pagination.per_page, sort=sort_by, dir=sort_dir, page=pagination.next_page) }}">Next</a>{% endif %}
             </div>
         </div>
     </section>
@@ -250,7 +252,7 @@
     bulkSelectedIds.value = ids.join(",");
     if (bulkActionSelect.value === "export_selected") {
       event.preventDefault();
-      const params = new URLSearchParams({ ids: ids.join(","), q: "{{ keyword }}", sync_status: "{{ sync_status }}", followup_status: "{{ followup_status }}", brand: "{{ brand }}" });
+      const params = new URLSearchParams({ ids: ids.join(","), q: "{{ keyword }}", sync_status: "{{ sync_status }}", followup_status: "{{ followup_status }}", brand: "{{ brand }}", pic_id: "{{ pic_id }}", product: "{{ product }}", priority: "{{ priority }}", order_date_from: "{{ order_date_from }}", order_date_to: "{{ order_date_to }}" });
       window.location.href = `/peluang-lanjutan/export?${params.toString()}`;
     }
   });

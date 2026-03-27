@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from urllib.parse import parse_qsl, urlparse
 
 from flask import Flask, flash, jsonify, make_response, redirect, render_template, request, url_for
 
@@ -874,7 +875,7 @@ def create_app() -> Flask:
                         raise ValueError("Aksi bulk belum valid.")
             except (ValidationError, ValueError) as exc:
                 flash(str(exc), "error")
-            return redirect(url_for("orderonline_page"))
+            return redirect(url_for("orderonline_page", **_current_orderonline_filters()))
 
         users = list_pengguna()
         keyword = request.args.get("q", "").strip()
@@ -884,12 +885,21 @@ def create_app() -> Flask:
         pic_id = request.args.get("pic_id", "").strip()
         product = request.args.get("product", "").strip()
         priority = request.args.get("priority", "").strip()
+        order_date_from = request.args.get("order_date_from", "").strip()
+        order_date_to = request.args.get("order_date_to", "").strip()
         sort_by = request.args.get("sort", "order_date").strip()
         sort_dir = request.args.get("dir", "desc").strip()
         page = _safe_positive_int(request.args.get("page", "1"), 1)
         per_page = _safe_per_page(request.args.get("per_page", "25"))
         auto_task_result = generate_due_followup_tasks()
-        all_rows = list_followup_orders(sync_status=sync_status, keyword=keyword, followup_status=followup_status, brand_name=brand)
+        all_rows = list_followup_orders(
+            sync_status=sync_status,
+            keyword=keyword,
+            followup_status=followup_status,
+            brand_name=brand,
+            order_date_from=order_date_from,
+            order_date_to=order_date_to,
+        )
         product_options = sorted({str(row["product"]).strip() for row in all_rows if str(row["product"]).strip()})
         rows = _filter_followup_rows(
             all_rows,
@@ -912,6 +922,8 @@ def create_app() -> Flask:
             pic_id=pic_id,
             product=product,
             priority=priority,
+            order_date_from=order_date_from,
+            order_date_to=order_date_to,
             sort_by=sort_by,
             sort_dir=sort_dir,
             pagination=pagination,
@@ -953,6 +965,11 @@ def create_app() -> Flask:
         sync_status = request.args.get("sync_status", "").strip()
         keyword = request.args.get("q", "").strip()
         brand = request.args.get("brand", "").strip()
+        pic_id = request.args.get("pic_id", "").strip()
+        product = request.args.get("product", "").strip()
+        priority = request.args.get("priority", "").strip()
+        order_date_from = request.args.get("order_date_from", "").strip()
+        order_date_to = request.args.get("order_date_to", "").strip()
         import_ids = [
             int(item)
             for item in request.args.get("ids", "").split(",")
@@ -965,6 +982,11 @@ def create_app() -> Flask:
             keyword=keyword,
             followup_status=followup_status,
             brand_name=brand,
+            pic_id=pic_id,
+            product=product,
+            priority=priority,
+            order_date_from=order_date_from,
+            order_date_to=order_date_to,
             import_ids=import_ids,
         )
         response = make_response(content)
@@ -1250,6 +1272,8 @@ def create_app() -> Flask:
             keyword=request.args.get("q", "").strip(),
             followup_status=request.args.get("followup_status", "").strip(),
             brand_name=request.args.get("brand", "").strip(),
+            order_date_from=request.args.get("order_date_from", "").strip(),
+            order_date_to=request.args.get("order_date_to", "").strip(),
         )
         return jsonify({
             "ok": True,
@@ -1562,6 +1586,38 @@ def _filter_followup_rows(rows, pic_id: str = "", brand: str = "", product: str 
             or (active_user_name and not row.get("nama_pengguna"))
         ]
     return filtered
+
+
+def _current_orderonline_filters() -> dict[str, str]:
+    keys = (
+        "q",
+        "sync_status",
+        "followup_status",
+        "brand",
+        "pic_id",
+        "product",
+        "priority",
+        "order_date_from",
+        "order_date_to",
+        "sort",
+        "dir",
+        "page",
+        "per_page",
+    )
+    values: dict[str, str] = {}
+    sources = [request.form, request.args]
+    referrer = request.referrer or ""
+    if referrer:
+        referrer_query = dict(parse_qsl(urlparse(referrer).query, keep_blank_values=True))
+        sources.append(referrer_query)
+    for key in keys:
+        for source in sources:
+            raw_value = source.get(key, "") if hasattr(source, "get") else ""
+            value = str(raw_value).strip()
+            if value:
+                values[key] = value
+                break
+    return values
 
 
 def _sort_followup_rows(rows, sort_by: str = "order_date", sort_dir: str = "desc"):

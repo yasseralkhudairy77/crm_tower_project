@@ -1260,12 +1260,25 @@ tbody tr:hover {
 
 .ops-filter-toolbar {
     display: grid;
-    grid-template-columns: minmax(220px, 2fr) repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     align-items: end;
 }
 
+.ops-filter-toolbar .filter-field,
+.ops-filter-toolbar .ops-filter-actions {
+    min-width: 0;
+}
+
+.ops-filter-toolbar .filter-field-search,
+.ops-filter-toolbar .ops-filter-actions {
+    grid-column: span 2;
+}
+
 .ops-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
     justify-content: flex-end;
 }
 

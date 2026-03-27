@@ -371,7 +371,14 @@ def enrich_followup_rows(rows):
     return enriched
 
 
-def list_followup_orders(sync_status: str = "", keyword: str = "", followup_status: str = "", brand_name: str = ""):
+def list_followup_orders(
+    sync_status: str = "",
+    keyword: str = "",
+    followup_status: str = "",
+    brand_name: str = "",
+    order_date_from: str = "",
+    order_date_to: str = "",
+):
     query = """
         SELECT oof.*, m.nama_member, u.nama_pengguna
         FROM orderonline_followup oof
@@ -390,6 +397,12 @@ def list_followup_orders(sync_status: str = "", keyword: str = "", followup_stat
     if brand_name:
         query += " AND COALESCE(oof.brand_name, 'Umum') = ?"
         params.append(brand_name)
+    if order_date_from:
+        query += " AND date(COALESCE(oof.created_at_iso, oof.paid_at_iso)) >= date(?)"
+        params.append(order_date_from)
+    if order_date_to:
+        query += " AND date(COALESCE(oof.created_at_iso, oof.paid_at_iso)) <= date(?)"
+        params.append(order_date_to)
     if keyword.strip():
         term = f"%{keyword.strip()}%"
         query += " AND (oof.customer_name LIKE ? OR oof.phone LIKE ? OR oof.product LIKE ?)"
@@ -830,9 +843,27 @@ def export_followup_csv(
     keyword: str = "",
     followup_status: str = "Belum Dihubungi",
     brand_name: str = "",
+    pic_id: str = "",
+    product: str = "",
+    priority: str = "",
+    order_date_from: str = "",
+    order_date_to: str = "",
     import_ids: list[int] | None = None,
 ) -> str:
-    rows = list_followup_orders(sync_status=sync_status, keyword=keyword, followup_status=followup_status, brand_name=brand_name)
+    rows = list_followup_orders(
+        sync_status=sync_status,
+        keyword=keyword,
+        followup_status=followup_status,
+        brand_name=brand_name,
+        order_date_from=order_date_from,
+        order_date_to=order_date_to,
+    )
+    if product:
+        rows = [row for row in rows if str(row["product"]).strip() == product]
+    if priority:
+        rows = [row for row in rows if str(row.get("priority_label", "")).strip() == priority]
+    if pic_id:
+        rows = [row for row in rows if str(row.get("followup_by") or "") == pic_id]
     if import_ids:
         selected = {int(item) for item in import_ids}
         rows = [row for row in rows if int(row["id_import"]) in selected]
