@@ -4,6 +4,7 @@ import sqlite3
 
 from .database import get_connection
 from .services.brands import detect_brand, classify_funnel
+from .services.orderonline import normalize_orderonline_datetime
 from .utils.helpers import now_str
 
 
@@ -383,6 +384,40 @@ def backfill_brand_metadata() -> None:
         conn.commit()
 
 
+def normalize_orderonline_datetimes() -> None:
+    with get_connection() as conn:
+        try:
+            rows = conn.execute(
+                """
+                SELECT id_import, created_at_raw, created_at_iso, paid_at_raw, paid_at_iso
+                FROM orderonline_followup
+                """
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return
+
+        for row in rows:
+            created_raw = row["created_at_raw"] or row["created_at_iso"] or ""
+            paid_raw = row["paid_at_raw"] or row["paid_at_iso"] or ""
+            normalized_created_raw, _created_date, normalized_created_iso = normalize_orderonline_datetime(created_raw)
+            normalized_paid_raw, _paid_date, normalized_paid_iso = normalize_orderonline_datetime(paid_raw)
+            conn.execute(
+                """
+                UPDATE orderonline_followup
+                SET created_at_raw = ?, created_at_iso = ?, paid_at_raw = ?, paid_at_iso = ?
+                WHERE id_import = ?
+                """,
+                (
+                    normalized_created_raw or row["created_at_raw"],
+                    normalized_created_iso or row["created_at_iso"],
+                    normalized_paid_raw or row["paid_at_raw"],
+                    normalized_paid_iso or row["paid_at_iso"],
+                    row["id_import"],
+                ),
+            )
+        conn.commit()
+
+
 def seed_defaults() -> None:
     now = now_str()
     with get_connection() as conn:
@@ -462,6 +497,7 @@ def initialize_database() -> None:
     create_schema()
     ensure_orderonline_columns()
     ensure_brand_columns()
+    normalize_orderonline_datetimes()
     create_indexes()
     seed_defaults()
     ensure_single_pic_user()

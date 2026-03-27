@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime
@@ -87,15 +88,53 @@ def detect_orderonline_csv_files() -> list[Path]:
     )
 
 
-def parse_orderonline_datetime(value: str) -> tuple[str | None, str | None]:
+def _strip_orderonline_timezone(raw: str) -> str:
+    cleaned = str(raw or "").strip().replace("T", " ")
+    cleaned = re.sub(r"([.,]\d+)(?=\s*(?:Z|[+-]\d{2}:?\d{2})?$)", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*(?:Z|[+-]\d{2}:?\d{2})$", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
+def normalize_orderonline_datetime(value: str) -> tuple[str | None, str | None, str | None]:
     raw = str(value or "").strip()
     if not raw:
-        return None, None
-    try:
-        parsed = datetime.strptime(raw, "%d-%m-%Y - %H:%M")
-        return parsed.strftime("%Y-%m-%d"), parsed.strftime("%Y-%m-%d %H:%M:%S")
-    except ValueError:
-        return None, None
+        return None, None, None
+
+    candidates = []
+    for candidate in (raw, _strip_orderonline_timezone(raw)):
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+
+    formats = (
+        ("%d-%m-%Y - %H:%M", "%d-%m-%Y - %H:%M"),
+        ("%d-%m-%Y - %H:%M:%S", "%d-%m-%Y - %H:%M:%S"),
+        ("%d-%m-%Y %H:%M", "%d-%m-%Y - %H:%M"),
+        ("%d-%m-%Y %H:%M:%S", "%d-%m-%Y - %H:%M:%S"),
+        ("%Y-%m-%d %H:%M", "%d-%m-%Y - %H:%M"),
+        ("%Y-%m-%d %H:%M:%S", "%d-%m-%Y - %H:%M:%S"),
+    )
+    for candidate in candidates:
+        for input_format, output_format in formats:
+            try:
+                parsed = datetime.strptime(candidate, input_format)
+                return (
+                    parsed.strftime(output_format),
+                    parsed.strftime("%Y-%m-%d"),
+                    parsed.strftime("%Y-%m-%d %H:%M:%S"),
+                )
+            except ValueError:
+                continue
+    return raw, None, None
+
+
+def parse_orderonline_datetime(value: str) -> tuple[str | None, str | None]:
+    _display, iso_date, iso_datetime = normalize_orderonline_datetime(value)
+    return iso_date, iso_datetime
+
+
+def display_orderonline_datetime(raw_value: str | None, iso_value: str | None) -> str:
+    display_value, _iso_date, _iso_datetime = normalize_orderonline_datetime(raw_value or iso_value or "")
+    return display_value or "-"
 
 
 def is_followup_eligible(row: dict) -> bool:
@@ -123,8 +162,8 @@ def import_orderonline_csv(file_bytes: bytes, source_file: str) -> ImportResult:
                 result.skipped += 1
                 continue
 
-            created_date, _created_dt = parse_orderonline_datetime(row.get("created_at", ""))
-            paid_date, _paid_dt = parse_orderonline_datetime(row.get("paid_at", ""))
+            created_raw, _created_date, created_dt = normalize_orderonline_datetime(row.get("created_at", ""))
+            paid_raw, _paid_date, paid_dt = normalize_orderonline_datetime(row.get("paid_at", ""))
             brand_name = detect_brand(
                 row.get("product", "").strip(),
                 row.get("product_code", "").strip(),
@@ -149,10 +188,10 @@ def import_orderonline_csv(file_bytes: bytes, source_file: str) -> ImportResult:
                 row.get("payment_method", "").strip() or None,
                 float(row.get("product_price") or 0),
                 int(row.get("quantity") or 1),
-                row.get("created_at", "").strip() or None,
-                created_date,
-                row.get("paid_at", "").strip() or None,
-                paid_date,
+                created_raw or None,
+                created_dt,
+                paid_raw or None,
+                paid_dt,
                 source_file,
                 source_file,
                 now,
@@ -313,9 +352,9 @@ def enrich_followup_rows(rows):
     for row in rows:
         item = dict(row)
         priority_label, priority_score = _compute_priority(row)
-        item["order_date_raw"] = item.get("created_at_raw") or item.get("paid_at_raw") or "-"
+        item["order_date_raw"] = display_orderonline_datetime(item.get("created_at_raw"), item.get("created_at_iso"))
         item["order_date_iso"] = item.get("created_at_iso") or item.get("paid_at_iso") or ""
-        item["payment_date_raw"] = item.get("paid_at_raw") or item.get("created_at_raw") or "-"
+        item["payment_date_raw"] = display_orderonline_datetime(item.get("paid_at_raw"), item.get("paid_at_iso"))
         item["payment_date_iso"] = item.get("paid_at_iso") or item.get("created_at_iso") or ""
         item["priority_label"] = priority_label
         item["priority_score"] = priority_score
