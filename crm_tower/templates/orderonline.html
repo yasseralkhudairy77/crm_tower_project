@@ -135,13 +135,13 @@
                             <td><span class="status-badge status-{{ status_tone(row.followup_status) }}">{{ row.followup_status or 'Belum Dihubungi' }}</span><div class="ops-cell-meta">{{ row.followup_result or 'Belum ada hasil' }}</div></td>
                             <td>{{ row.nama_pengguna or default_pic_name }}</td>
                             <td><span class="status-badge status-{{ status_tone(row.sync_status) }}">{{ row.sync_status }}</span></td>
-                            <td>{{ row.paid_at_raw or row.created_at_raw or '-' }}</td>
+                            <td>{{ row.order_date_raw }}</td>
                             <td><div>{{ row.followup_at or '-' }}</div>{% if row.reminder_text %}<div class="ops-cell-meta">{{ row.reminder_text }}</div>{% endif %}</td>
                             <td>
                                 <div class="ops-row-actions">
                                     <button class="button button-secondary open-followup-modal" type="button"
                                         data-import-id="{{ row.id_import }}" data-name="{{ row.customer_name }}" data-phone="{{ row.phone }}"
-                                        data-product="{{ row.product }}" data-order-id="{{ row.order_id }}" data-order-date="{{ row.paid_at_raw or row.created_at_raw or '-' }}"
+                                        data-product="{{ row.product }}" data-order-id="{{ row.order_id }}" data-order-date="{{ row.order_date_raw }}"
                                         data-priority="{{ row.priority_label }}" data-priority-score="{{ row.priority_score }}"
                                         data-payment-status="{{ row.payment_status or '-' }}" data-order-status="{{ row.order_status or '-' }}"
                                         data-sync-status="{{ row.sync_status }}" data-followup-status="{{ row.followup_status or 'Belum Dihubungi' }}"

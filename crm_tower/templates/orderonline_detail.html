@@ -28,6 +28,8 @@
         <div class="panel-header"><h2>Informasi Lead</h2></div>
         <div class="detail-stack">
             <div><span>Produk</span><strong>{{ detail.product }}</strong></div>
+            <div><span>Tanggal Order</span><strong>{{ detail.order_date_raw }}</strong></div>
+            <div><span>Tanggal Bayar</span><strong>{{ detail.payment_date_raw }}</strong></div>
             <div><span>Harga</span><strong>Rp {{ '{:,.0f}'.format(detail.product_price or 0).replace(',', '.') }}</strong></div>
             <div><span>Status Sync</span><strong>{{ detail.sync_status }}</strong></div>
             <div><span>Prioritas</span><strong>{{ detail.priority_label }} ({{ detail.priority_score }})</strong></div>

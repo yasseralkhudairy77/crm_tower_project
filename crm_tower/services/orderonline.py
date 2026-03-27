@@ -313,6 +313,10 @@ def enrich_followup_rows(rows):
     for row in rows:
         item = dict(row)
         priority_label, priority_score = _compute_priority(row)
+        item["order_date_raw"] = item.get("created_at_raw") or item.get("paid_at_raw") or "-"
+        item["order_date_iso"] = item.get("created_at_iso") or item.get("paid_at_iso") or ""
+        item["payment_date_raw"] = item.get("paid_at_raw") or item.get("created_at_raw") or "-"
+        item["payment_date_iso"] = item.get("paid_at_iso") or item.get("created_at_iso") or ""
         item["priority_label"] = priority_label
         item["priority_score"] = priority_score
         item["reminder_text"] = _compute_reminder(row)

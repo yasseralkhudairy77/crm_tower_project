@@ -1578,7 +1578,7 @@ def _sort_followup_rows(rows, sort_by: str = "order_date", sort_dir: str = "desc
             return str(row.get("sync_status") or "")
         if sort_by == "status":
             return str(row.get("followup_status") or "")
-        return str(row.get("paid_at_iso") or row.get("created_at_iso") or "")
+        return str(row.get("order_date_iso") or row.get("created_at_iso") or row.get("paid_at_iso") or "")
 
     return sorted(rows, key=sort_key, reverse=reverse)
 
