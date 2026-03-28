@@ -222,7 +222,7 @@
                 <h2>Reminder Follow Up</h2>
                 <p>Lead yang perlu segera disentuh karena masih baru atau jatuh tempo.</p>
             </div>
-            <a href="{{ url_for('orderonline_page', followup_status='Belum Dihubungi', brand=selected_brand) if selected_brand else url_for('orderonline_page', followup_status='Belum Dihubungi') }}">Lihat antrean</a>
+            <a href="{{ url_for('orderonline_page', contact_state='needs_followup', brand=selected_brand) if selected_brand else url_for('orderonline_page', contact_state='needs_followup') }}">Lihat antrean</a>
         </div>
         {% if followup_overdue %}
             <div class="dashboard-list">

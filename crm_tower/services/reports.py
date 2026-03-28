@@ -727,7 +727,17 @@ def build_supervisor_dashboard(period: str = "weekly", brand: str = "") -> dict:
         FROM orderonline_followup oof
         LEFT JOIN pengguna u ON oof.followup_by = u.id_pengguna
         WHERE (
-            oof.followup_status = 'Belum Dihubungi'
+            NOT (
+                COALESCE(TRIM(oof.followup_status), 'Belum Dihubungi') <> 'Belum Dihubungi'
+                OR TRIM(COALESCE(oof.followup_result, '')) <> ''
+                OR TRIM(COALESCE(oof.followup_notes, '')) <> ''
+                OR TRIM(COALESCE(oof.followup_at, '')) <> ''
+                OR EXISTS (
+                    SELECT 1
+                    FROM orderonline_followup_log oofl
+                    WHERE oofl.id_import = oof.id_import
+                )
+            )
             OR (oof.next_followup_date IS NOT NULL AND oof.next_followup_date <= ?)
         ){followup_brand_clause}
         ORDER BY

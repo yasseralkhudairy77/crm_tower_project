@@ -388,6 +388,16 @@ def _followed_up_sql_condition(alias: str = "orderonline_followup") -> str:
     """
 
 
+def _needs_followup_sql_condition(alias: str = "orderonline_followup") -> str:
+    followed_up_condition = _followed_up_sql_condition(alias)
+    return f"""
+        (
+            NOT ({followed_up_condition})
+            OR ({alias}.next_followup_date IS NOT NULL AND date({alias}.next_followup_date) <= date('now'))
+        )
+    """
+
+
 def is_followup_recorded(row) -> bool:
     data = dict(row)
     if str(data.get("followup_status") or "Belum Dihubungi").strip() != "Belum Dihubungi":
@@ -436,6 +446,8 @@ def list_followup_orders(
         query += f" AND NOT ({_followed_up_sql_condition('oof')})"
     elif contact_state == "followed_up":
         query += f" AND ({_followed_up_sql_condition('oof')})"
+    elif contact_state == "needs_followup":
+        query += f" AND ({_needs_followup_sql_condition('oof')})"
     if brand_name:
         query += " AND COALESCE(oof.brand_name, 'Umum') = ?"
         params.append(brand_name)
@@ -888,7 +900,7 @@ def bulk_update_followup_records(
 def export_followup_csv(
     sync_status: str = "",
     keyword: str = "",
-    followup_status: str = "Belum Dihubungi",
+    followup_status: str = "",
     followup_result: str = "",
     contact_state: str = "",
     brand_name: str = "",

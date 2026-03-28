@@ -190,7 +190,7 @@
                     <h2>Antrean Follow Up</h2>
                     <p>Prospek yang belum disentuh atau sudah jatuh tempo untuk dihubungi lagi.</p>
                 </div>
-                <a href="{{ url_for('orderonline_page', brand=selected_brand) if selected_brand else url_for('orderonline_page') }}">Buka peluang</a>
+                <a href="{{ url_for('orderonline_page', contact_state='needs_followup', brand=selected_brand) if selected_brand else url_for('orderonline_page', contact_state='needs_followup') }}">Buka peluang</a>
             </div>
             <div class="dashboard-list">
                 {% for row in supervisor_data.pending_followups %}
