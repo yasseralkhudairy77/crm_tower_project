@@ -299,6 +299,24 @@ def build_report_dashboard(period: str, brand: str = "") -> dict:
         """,
         followup_brand_params,
     )
+    followup_contact_breakdown = [
+        {
+            "label": "Belum Di Follow Up",
+            "total": sum(
+                int(row["total"])
+                for row in followup_status_breakdown
+                if str(row["label"] or "").strip() == "Belum Dihubungi"
+            ),
+        },
+        {
+            "label": "Sudah Pernah Di Follow Up",
+            "total": sum(
+                int(row["total"])
+                for row in followup_status_breakdown
+                if str(row["label"] or "").strip() != "Belum Dihubungi"
+            ),
+        },
+    ]
     active_users = fetchall("SELECT id_pengguna, nama_pengguna FROM pengguna WHERE aktif = 1 ORDER BY nama_pengguna ASC")
     pic_breakdown = []
     for user in active_users:
@@ -381,6 +399,7 @@ def build_report_dashboard(period: str, brand: str = "") -> dict:
             "mentor_needed": mentor_needed,
         },
         "brand_breakdown": brand_breakdown,
+        "followup_contact_breakdown": followup_contact_breakdown,
         "followup_status_breakdown": followup_status_breakdown,
         "issue_by_type": issue_by_type,
         "obstacle_by_category": obstacle_by_category,

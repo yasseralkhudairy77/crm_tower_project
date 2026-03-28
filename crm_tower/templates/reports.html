@@ -124,12 +124,12 @@
         <article class="panel dashboard-panel">
             <div class="list-report-bar">
                 <div>
-                    <h2>Status Follow Up</h2>
-                    <p>Komposisi antrean peluang lanjutan berdasarkan status follow up.</p>
+                    <h2>Status Kontak Prospek</h2>
+                    <p>Ringkasan sederhana agar tim CRM mudah melihat data yang belum dan sudah pernah di-follow up.</p>
                 </div>
             </div>
             <div class="dashboard-list">
-                {% for row in report_data.followup_status_breakdown %}
+                {% for row in report_data.followup_contact_breakdown %}
                     <div class="dashboard-list-item">
                         <div class="dashboard-list-main">
                             <strong>{{ row.label }}</strong>
@@ -139,7 +139,7 @@
                         </div>
                     </div>
                 {% else %}
-                    <p class="empty">Belum ada data status follow up.</p>
+                    <p class="empty">Belum ada data status kontak prospek.</p>
                 {% endfor %}
             </div>
         </article>
