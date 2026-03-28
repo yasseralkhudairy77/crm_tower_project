@@ -880,7 +880,7 @@ def create_app() -> Flask:
         users = list_pengguna()
         keyword = request.args.get("q", "").strip()
         sync_status = request.args.get("sync_status", "").strip()
-        followup_status = request.args.get("followup_status", "").strip()
+        followup_result = request.args.get("followup_result", "").strip()
         brand = request.args.get("brand", "").strip()
         pic_id = request.args.get("pic_id", "").strip()
         product = request.args.get("product", "").strip()
@@ -895,7 +895,7 @@ def create_app() -> Flask:
         all_rows = list_followup_orders(
             sync_status=sync_status,
             keyword=keyword,
-            followup_status=followup_status,
+            followup_result=followup_result,
             brand_name=brand,
             order_date_from=order_date_from,
             order_date_to=order_date_to,
@@ -917,7 +917,7 @@ def create_app() -> Flask:
             total_rows=len(rows),
             keyword=keyword,
             sync_status=sync_status,
-            followup_status=followup_status,
+            followup_result=followup_result,
             brand=brand,
             pic_id=pic_id,
             product=product,
@@ -975,12 +975,14 @@ def create_app() -> Flask:
             for item in request.args.get("ids", "").split(",")
             if str(item).strip().isdigit()
         ]
-        default_followup = "" if import_ids else "Belum Dihubungi"
+        default_followup = ""
         followup_status = request.args.get("followup_status", default_followup).strip()
+        followup_result = request.args.get("followup_result", "").strip()
         content = export_followup_csv(
             sync_status=sync_status,
             keyword=keyword,
             followup_status=followup_status,
+            followup_result=followup_result,
             brand_name=brand,
             pic_id=pic_id,
             product=product,
@@ -1271,6 +1273,7 @@ def create_app() -> Flask:
             sync_status=request.args.get("sync_status", "").strip(),
             keyword=request.args.get("q", "").strip(),
             followup_status=request.args.get("followup_status", "").strip(),
+            followup_result=request.args.get("followup_result", "").strip(),
             brand_name=request.args.get("brand", "").strip(),
             order_date_from=request.args.get("order_date_from", "").strip(),
             order_date_to=request.args.get("order_date_to", "").strip(),
@@ -1592,7 +1595,7 @@ def _current_orderonline_filters() -> dict[str, str]:
     keys = (
         "q",
         "sync_status",
-        "followup_status",
+        "followup_result",
         "brand",
         "pic_id",
         "product",
