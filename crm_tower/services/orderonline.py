@@ -954,6 +954,10 @@ def weekly_supervisor_dashboard(brand_name: str = "") -> dict:
             f"SELECT COUNT(*) AS total FROM orderonline_followup_log l{join_clause} WHERE date(l.created_at) >= date('now','-6 day'){where_brand}",
             params,
         )["total"],
+        "weekly_unique_contacts": fetchone(
+            f"SELECT COUNT(DISTINCT l.id_import) AS total FROM orderonline_followup_log l{join_clause} WHERE date(l.created_at) >= date('now','-6 day'){where_brand}",
+            params,
+        )["total"],
         "weekly_positive": fetchone(
             """
             SELECT COUNT(*) AS total
