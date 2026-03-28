@@ -940,6 +940,7 @@ def create_app() -> Flask:
             product_options=product_options,
             priority_options=["Tinggi", "Sedang", "Rendah"],
             per_page_options=[20, 25, 50, 100],
+            filter_sync_status_options=["Belum Di Follow Up", "Baru", "Sudah Masuk CRM", "Sudah Ada Member"],
             sync_status_options=["Baru", "Sudah Masuk CRM", "Sudah Ada Member"],
             followup_status_options=FOLLOWUP_STATUS_OPTIONS,
             followup_result_options=FOLLOWUP_RESULT_OPTIONS,

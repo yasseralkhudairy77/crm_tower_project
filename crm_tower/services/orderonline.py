@@ -391,8 +391,11 @@ def list_followup_orders(
     """
     params: list = []
     if sync_status:
-        query += " AND oof.sync_status = ?"
-        params.append(sync_status)
+        if sync_status == "Belum Di Follow Up":
+            query += " AND oof.followup_status = 'Belum Dihubungi'"
+        else:
+            query += " AND oof.sync_status = ?"
+            params.append(sync_status)
     if followup_status:
         query += " AND oof.followup_status = ?"
         params.append(followup_status)
