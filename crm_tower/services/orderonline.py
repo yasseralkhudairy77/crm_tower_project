@@ -376,6 +376,7 @@ def list_followup_orders(
     keyword: str = "",
     followup_status: str = "",
     followup_result: str = "",
+    contact_state: str = "",
     brand_name: str = "",
     order_date_from: str = "",
     order_date_to: str = "",
@@ -398,6 +399,10 @@ def list_followup_orders(
     if followup_result:
         query += " AND oof.followup_result = ?"
         params.append(followup_result)
+    if contact_state == "not_contacted":
+        query += " AND oof.followup_status = 'Belum Dihubungi'"
+    elif contact_state == "followed_up":
+        query += " AND oof.followup_status <> 'Belum Dihubungi'"
     if brand_name:
         query += " AND COALESCE(oof.brand_name, 'Umum') = ?"
         params.append(brand_name)
@@ -851,6 +856,7 @@ def export_followup_csv(
     keyword: str = "",
     followup_status: str = "Belum Dihubungi",
     followup_result: str = "",
+    contact_state: str = "",
     brand_name: str = "",
     pic_id: str = "",
     product: str = "",
@@ -864,6 +870,7 @@ def export_followup_csv(
         keyword=keyword,
         followup_status=followup_status,
         followup_result=followup_result,
+        contact_state=contact_state,
         brand_name=brand_name,
         order_date_from=order_date_from,
         order_date_to=order_date_to,

@@ -881,6 +881,7 @@ def create_app() -> Flask:
         keyword = request.args.get("q", "").strip()
         sync_status = request.args.get("sync_status", "").strip()
         followup_result = request.args.get("followup_result", "").strip()
+        contact_state = request.args.get("contact_state", "").strip()
         brand = request.args.get("brand", "").strip()
         pic_id = request.args.get("pic_id", "").strip()
         product = request.args.get("product", "").strip()
@@ -896,6 +897,7 @@ def create_app() -> Flask:
             sync_status=sync_status,
             keyword=keyword,
             followup_result=followup_result,
+            contact_state=contact_state,
             brand_name=brand,
             order_date_from=order_date_from,
             order_date_to=order_date_to,
@@ -918,6 +920,7 @@ def create_app() -> Flask:
             keyword=keyword,
             sync_status=sync_status,
             followup_result=followup_result,
+            contact_state=contact_state,
             brand=brand,
             pic_id=pic_id,
             product=product,
@@ -978,11 +981,13 @@ def create_app() -> Flask:
         default_followup = ""
         followup_status = request.args.get("followup_status", default_followup).strip()
         followup_result = request.args.get("followup_result", "").strip()
+        contact_state = request.args.get("contact_state", "").strip()
         content = export_followup_csv(
             sync_status=sync_status,
             keyword=keyword,
             followup_status=followup_status,
             followup_result=followup_result,
+            contact_state=contact_state,
             brand_name=brand,
             pic_id=pic_id,
             product=product,
@@ -1274,6 +1279,7 @@ def create_app() -> Flask:
             keyword=request.args.get("q", "").strip(),
             followup_status=request.args.get("followup_status", "").strip(),
             followup_result=request.args.get("followup_result", "").strip(),
+            contact_state=request.args.get("contact_state", "").strip(),
             brand_name=request.args.get("brand", "").strip(),
             order_date_from=request.args.get("order_date_from", "").strip(),
             order_date_to=request.args.get("order_date_to", "").strip(),
@@ -1596,6 +1602,7 @@ def _current_orderonline_filters() -> dict[str, str]:
         "q",
         "sync_status",
         "followup_result",
+        "contact_state",
         "brand",
         "pic_id",
         "product",
