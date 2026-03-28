@@ -1615,11 +1615,11 @@ def _current_orderonline_filters() -> dict[str, str]:
         "per_page",
     )
     values: dict[str, str] = {}
-    sources = [request.form, request.args]
+    sources = [request.args]
     referrer = request.referrer or ""
     if referrer:
         referrer_query = dict(parse_qsl(urlparse(referrer).query, keep_blank_values=True))
-        sources.append(referrer_query)
+        sources.insert(0, referrer_query)
     for key in keys:
         for source in sources:
             raw_value = source.get(key, "") if hasattr(source, "get") else ""
