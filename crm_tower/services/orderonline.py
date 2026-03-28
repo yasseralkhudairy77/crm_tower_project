@@ -372,6 +372,22 @@ def enrich_followup_rows(rows):
     return enriched
 
 
+def _followed_up_sql_condition(alias: str = "orderonline_followup") -> str:
+    return f"""
+        (
+            COALESCE(TRIM({alias}.followup_status), 'Belum Dihubungi') <> 'Belum Dihubungi'
+            OR TRIM(COALESCE({alias}.followup_result, '')) <> ''
+            OR TRIM(COALESCE({alias}.followup_notes, '')) <> ''
+            OR TRIM(COALESCE({alias}.followup_at, '')) <> ''
+            OR EXISTS (
+                SELECT 1
+                FROM orderonline_followup_log oofl
+                WHERE oofl.id_import = {alias}.id_import
+            )
+        )
+    """
+
+
 def list_followup_orders(
     sync_status: str = "",
     keyword: str = "",
@@ -404,9 +420,9 @@ def list_followup_orders(
         query += " AND oof.followup_result = ?"
         params.append(followup_result)
     if contact_state == "not_contacted":
-        query += " AND oof.followup_status = 'Belum Dihubungi'"
+        query += f" AND NOT ({_followed_up_sql_condition('oof')})"
     elif contact_state == "followed_up":
-        query += " AND oof.followup_status <> 'Belum Dihubungi'"
+        query += f" AND ({_followed_up_sql_condition('oof')})"
     if brand_name:
         query += " AND COALESCE(oof.brand_name, 'Umum') = ?"
         params.append(brand_name)
@@ -430,6 +446,7 @@ def followup_summary(brand_name: str = "") -> dict:
     if brand_name:
         where = " WHERE COALESCE(brand_name, 'Umum') = ?"
         params = (brand_name,)
+    followed_up_condition = _followed_up_sql_condition("orderonline_followup")
     return {
         "total": fetchone(f"SELECT COUNT(*) AS total FROM orderonline_followup{where}", params)["total"],
         "new": fetchone(
@@ -445,11 +462,11 @@ def followup_summary(brand_name: str = "") -> dict:
             params,
         )["total"],
         "not_contacted": fetchone(
-            f"SELECT COUNT(*) AS total FROM orderonline_followup{where}{' AND' if where else ' WHERE'} followup_status = 'Belum Dihubungi'",
+            f"SELECT COUNT(*) AS total FROM orderonline_followup{where}{' AND' if where else ' WHERE'} NOT ({followed_up_condition})",
             params,
         )["total"],
         "followed_up": fetchone(
-            f"SELECT COUNT(*) AS total FROM orderonline_followup{where}{' AND' if where else ' WHERE'} followup_status <> 'Belum Dihubungi'",
+            f"SELECT COUNT(*) AS total FROM orderonline_followup{where}{' AND' if where else ' WHERE'} ({followed_up_condition})",
             params,
         )["total"],
     }

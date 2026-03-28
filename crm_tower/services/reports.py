@@ -302,19 +302,45 @@ def build_report_dashboard(period: str, brand: str = "") -> dict:
     followup_contact_breakdown = [
         {
             "label": "Total Data yang Belum di Follow Up",
-            "total": sum(
-                int(row["total"])
-                for row in followup_status_breakdown
-                if str(row["label"] or "").strip() == "Belum Dihubungi"
-            ),
+            "total": fetchone(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM orderonline_followup oof
+                WHERE NOT (
+                    COALESCE(TRIM(oof.followup_status), 'Belum Dihubungi') <> 'Belum Dihubungi'
+                    OR TRIM(COALESCE(oof.followup_result, '')) <> ''
+                    OR TRIM(COALESCE(oof.followup_notes, '')) <> ''
+                    OR TRIM(COALESCE(oof.followup_at, '')) <> ''
+                    OR EXISTS (
+                        SELECT 1
+                        FROM orderonline_followup_log oofl
+                        WHERE oofl.id_import = oof.id_import
+                    )
+                ){followup_brand_clause}
+                """,
+                followup_brand_params,
+            )["total"],
         },
         {
             "label": "Total Data yang Sudah di Follow Up",
-            "total": sum(
-                int(row["total"])
-                for row in followup_status_breakdown
-                if str(row["label"] or "").strip() != "Belum Dihubungi"
-            ),
+            "total": fetchone(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM orderonline_followup oof
+                WHERE (
+                    COALESCE(TRIM(oof.followup_status), 'Belum Dihubungi') <> 'Belum Dihubungi'
+                    OR TRIM(COALESCE(oof.followup_result, '')) <> ''
+                    OR TRIM(COALESCE(oof.followup_notes, '')) <> ''
+                    OR TRIM(COALESCE(oof.followup_at, '')) <> ''
+                    OR EXISTS (
+                        SELECT 1
+                        FROM orderonline_followup_log oofl
+                        WHERE oofl.id_import = oof.id_import
+                    )
+                ){followup_brand_clause}
+                """,
+                followup_brand_params,
+            )["total"],
         },
     ]
     active_users = fetchall("SELECT id_pengguna, nama_pengguna FROM pengguna WHERE aktif = 1 ORDER BY nama_pengguna ASC")
