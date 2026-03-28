@@ -880,6 +880,7 @@ def create_app() -> Flask:
         users = list_pengguna()
         keyword = request.args.get("q", "").strip()
         sync_status = request.args.get("sync_status", "").strip()
+        followup_status = request.args.get("followup_status", "").strip()
         followup_result = request.args.get("followup_result", "").strip()
         contact_state = request.args.get("contact_state", "").strip()
         brand = request.args.get("brand", "").strip()
@@ -896,6 +897,7 @@ def create_app() -> Flask:
         all_rows = list_followup_orders(
             sync_status=sync_status,
             keyword=keyword,
+            followup_status=followup_status,
             followup_result=followup_result,
             contact_state=contact_state,
             brand_name=brand,
@@ -919,6 +921,7 @@ def create_app() -> Flask:
             total_rows=len(rows),
             keyword=keyword,
             sync_status=sync_status,
+            followup_status=followup_status,
             followup_result=followup_result,
             contact_state=contact_state,
             brand=brand,
@@ -940,7 +943,7 @@ def create_app() -> Flask:
             product_options=product_options,
             priority_options=["Tinggi", "Sedang", "Rendah"],
             per_page_options=[20, 25, 50, 100],
-            filter_sync_status_options=["Belum Di Follow Up", "Baru", "Sudah Masuk CRM", "Sudah Ada Member"],
+            filter_sync_status_options=["Baru", "Sudah Masuk CRM", "Sudah Ada Member"],
             sync_status_options=["Baru", "Sudah Masuk CRM", "Sudah Ada Member"],
             followup_status_options=FOLLOWUP_STATUS_OPTIONS,
             followup_result_options=FOLLOWUP_RESULT_OPTIONS,
