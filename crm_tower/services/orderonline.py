@@ -261,6 +261,13 @@ def _parse_iso_datetime(value: str | None) -> datetime | None:
         return None
 
 
+def _iso_date_only(value: str | None) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    return raw[:10]
+
+
 def _compute_priority(row) -> tuple[str, int]:
     score = 0
     payment_date = _parse_iso_datetime(row["paid_at_iso"])
@@ -650,9 +657,24 @@ def import_followup_to_crm(import_id: int, pic_id: int) -> dict:
     if not row:
         raise ValidationError("Data OrderOnline tidak ditemukan.")
 
+    existing_imported_member_id = int(row["imported_member_id"] or 0)
+    existing_imported_task_id = int(row["imported_task_id"] or 0)
+    if existing_imported_member_id:
+        existing_member_row = fetchone("SELECT id_member FROM member WHERE id_member = ?", (existing_imported_member_id,))
+        existing_task_row = None
+        if existing_imported_task_id:
+            existing_task_row = fetchone("SELECT id_tugas FROM tugas_crm WHERE id_tugas = ?", (existing_imported_task_id,))
+        if existing_member_row and existing_task_row:
+            return {
+                "member_id": existing_imported_member_id,
+                "task_id": existing_imported_task_id,
+                "created_member": False,
+                "already_synced": True,
+            }
+
     phone = normalisasi_wa(row["phone"])
     existing_member = fetchone("SELECT id_member FROM member WHERE nomor_whatsapp = ?", (phone,))
-    paid_date = row["paid_at_iso"] or row["created_at_iso"] or today_str()
+    paid_date = _iso_date_only(row["paid_at_iso"]) or _iso_date_only(row["created_at_iso"]) or today_str()
     brand_name = row["brand_name"] or detect_brand(row["product"], row["product_code"], row["source_file"])
     source = fetchone("SELECT id_sumber FROM sumber_data WHERE nama_sumber = 'OrderOnline'")
     if not source:
@@ -698,6 +720,9 @@ def import_followup_to_crm(import_id: int, pic_id: int) -> dict:
         created_member = True
         sync_status = "Sudah Masuk CRM"
 
+    if existing_imported_member_id and member_id != existing_imported_member_id:
+        member_id = existing_imported_member_id
+
     purchase_exists = fetchone(
         "SELECT id_pembelian FROM riwayat_pembelian WHERE nomor_order = ?",
         (row["order_id"],),
@@ -717,20 +742,39 @@ def import_followup_to_crm(import_id: int, pic_id: int) -> dict:
             catatan_pembelian=f"Import dari CSV OrderOnline untuk {row['product']}.",
         )
 
-    add_note(
-        member_id=member_id,
-        jenis_catatan="Catatan Awal",
-        isi_catatan=f"Lead after-sales diimpor dari OrderOnline. Brand: {brand_name}. Produk: {row['product']}. Order ID: {row['order_id']}.",
-        dibuat_oleh=pic_id,
+    note_exists = fetchone(
+        """
+        SELECT id_catatan
+        FROM catatan_member
+        WHERE id_member = ?
+          AND jenis_catatan = 'Catatan Awal'
+          AND isi_catatan LIKE ?
+        LIMIT 1
+        """,
+        (member_id, f"%Order ID: {row['order_id']}.%"),
     )
-    task_id = add_task(
-        member_id=member_id,
-        jenis_tugas="Bahas program lanjutan",
-        penanggung_jawab=pic_id,
-        tanggal_jatuh_tempo=today_str(),
-        prioritas="Sedang",
-        catatan_tugas=f"Follow up pembeli {row['product']} untuk penawaran after-sales/produk lanjutan.",
-    )
+    if not note_exists:
+        add_note(
+            member_id=member_id,
+            jenis_catatan="Catatan Awal",
+            isi_catatan=f"Lead after-sales diimpor dari OrderOnline. Brand: {brand_name}. Produk: {row['product']}. Order ID: {row['order_id']}.",
+            dibuat_oleh=pic_id,
+        )
+
+    existing_task = None
+    if existing_imported_task_id:
+        existing_task = fetchone("SELECT id_tugas FROM tugas_crm WHERE id_tugas = ?", (existing_imported_task_id,))
+    if existing_task:
+        task_id = existing_imported_task_id
+    else:
+        task_id = add_task(
+            member_id=member_id,
+            jenis_tugas="Bahas program lanjutan",
+            penanggung_jawab=pic_id,
+            tanggal_jatuh_tempo=today_str(),
+            prioritas="Sedang",
+            catatan_tugas=f"Follow up pembeli {row['product']} untuk penawaran after-sales/produk lanjutan.",
+        )
 
     with get_connection() as conn:
         conn.execute(
