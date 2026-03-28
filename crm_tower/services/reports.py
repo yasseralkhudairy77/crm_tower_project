@@ -301,7 +301,7 @@ def build_report_dashboard(period: str, brand: str = "") -> dict:
     )
     followup_contact_breakdown = [
         {
-            "label": "Belum Di Follow Up",
+            "label": "Total Data yang Belum di Follow Up",
             "total": sum(
                 int(row["total"])
                 for row in followup_status_breakdown
@@ -309,7 +309,7 @@ def build_report_dashboard(period: str, brand: str = "") -> dict:
             ),
         },
         {
-            "label": "Sudah Pernah Di Follow Up",
+            "label": "Total Data yang Sudah di Follow Up",
             "total": sum(
                 int(row["total"])
                 for row in followup_status_breakdown
