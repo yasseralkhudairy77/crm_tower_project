@@ -49,6 +49,7 @@ from .services.orderonline import (
     get_followup_detail,
     import_followup_to_crm,
     import_orderonline_csv,
+    is_followup_recorded,
     list_followup_orders,
     quick_mark_whatsapp,
     today_followup_dashboard,
@@ -99,7 +100,7 @@ def create_app() -> Flask:
             pending_count = sum(
                 1
                 for row in all_followup_rows
-                if str(row.get("brand_name") or "Umum") == option and str(row.get("followup_status") or "") == "Belum Dihubungi"
+                if str(row.get("brand_name") or "Umum") == option and not is_followup_recorded(row)
             )
             brand_overview.append(
                 {

@@ -388,6 +388,19 @@ def _followed_up_sql_condition(alias: str = "orderonline_followup") -> str:
     """
 
 
+def is_followup_recorded(row) -> bool:
+    data = dict(row)
+    if str(data.get("followup_status") or "Belum Dihubungi").strip() != "Belum Dihubungi":
+        return True
+    if str(data.get("followup_result") or "").strip():
+        return True
+    if str(data.get("followup_notes") or "").strip():
+        return True
+    if str(data.get("followup_at") or "").strip():
+        return True
+    return bool(data.get("log_count") or data.get("has_followup_log"))
+
+
 def list_followup_orders(
     sync_status: str = "",
     keyword: str = "",

@@ -192,7 +192,7 @@
                 <h2>Kontak Terbaru</h2>
                 <p>Aktivitas follow up terbaru yang sudah tercatat hari ini.</p>
             </div>
-            <a href="{{ url_for('orderonline_page', followup_status='Sudah Dihubungi', brand=selected_brand) if selected_brand else url_for('orderonline_page', followup_status='Sudah Dihubungi') }}">Buka aktivitas</a>
+            <a href="{{ url_for('orderonline_page', contact_state='followed_up', brand=selected_brand) if selected_brand else url_for('orderonline_page', contact_state='followed_up') }}">Buka aktivitas</a>
         </div>
         {% if today_followup.latest_contacts %}
             <div class="dashboard-list">
