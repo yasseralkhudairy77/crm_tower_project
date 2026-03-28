@@ -17,3 +17,4 @@ crm_tower_config.json
 
 .DS_Store
 Thumbs.db
+crm_run_*.log
