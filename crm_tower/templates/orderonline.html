@@ -253,7 +253,7 @@
     bulkSelectedIds.value = ids.join(",");
     if (bulkActionSelect.value === "export_selected") {
       event.preventDefault();
-      const params = new URLSearchParams({ ids: ids.join(","), q: "{{ keyword }}", sync_status: "{{ sync_status }}", followup_result: "{{ followup_result }}", contact_state: "{{ contact_state }}", brand: "{{ brand }}", pic_id: "{{ pic_id }}", product: "{{ product }}", priority: "{{ priority }}", order_date_from: "{{ order_date_from }}", order_date_to: "{{ order_date_to }}" });
+      const params = new URLSearchParams({ ids: ids.join(","), q: "{{ keyword }}", sync_status: "{{ sync_status }}", followup_status: "{{ followup_status }}", followup_result: "{{ followup_result }}", contact_state: "{{ contact_state }}", brand: "{{ brand }}", pic_id: "{{ pic_id }}", product: "{{ product }}", priority: "{{ priority }}", order_date_from: "{{ order_date_from }}", order_date_to: "{{ order_date_to }}" });
       window.location.href = `/peluang-lanjutan/export?${params.toString()}`;
     }
   });

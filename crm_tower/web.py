@@ -1606,6 +1606,7 @@ def _current_orderonline_filters() -> dict[str, str]:
     keys = (
         "q",
         "sync_status",
+        "followup_status",
         "followup_result",
         "contact_state",
         "brand",
