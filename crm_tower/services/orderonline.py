@@ -30,6 +30,7 @@ FOLLOWUP_RESULT_OPTIONS = [
     "Respon Positif",
     "Minta Info Lanjutan",
     "Jadwalkan Follow Up Lagi",
+    "Kendala Budget",
     "Tidak Tertarik",
     "Closing",
 ]
