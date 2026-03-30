@@ -420,6 +420,17 @@ def is_followup_recorded(row) -> bool:
     return bool(data.get("log_count") or data.get("has_followup_log"))
 
 
+def _apply_followup_result_filter(query: str, params: list, followup_result: str, alias: str = "oof") -> tuple[str, list]:
+    if not followup_result:
+        return query, params
+    if followup_result == "Belum Ada Respon":
+        query += f" AND TRIM(COALESCE({alias}.followup_result, '')) IN ('', 'Belum Ada Respon')"
+        return query, params
+    query += f" AND {alias}.followup_result = ?"
+    params.append(followup_result)
+    return query, params
+
+
 def list_followup_orders(
     sync_status: str = "",
     keyword: str = "",
@@ -451,9 +462,7 @@ def list_followup_orders(
         else:
             query += " AND oof.followup_status = ?"
             params.append(followup_status)
-    if followup_result:
-        query += " AND oof.followup_result = ?"
-        params.append(followup_result)
+    query, params = _apply_followup_result_filter(query, params, followup_result, alias="oof")
     if contact_state == "not_contacted":
         query += f" AND NOT ({_followed_up_sql_condition('oof')})"
     elif contact_state == "followed_up":
