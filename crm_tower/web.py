@@ -1693,14 +1693,16 @@ def _status_tone(value: str) -> str:
     normalized = str(value or "").strip().lower()
     danger_values = {
         "terlambat", "masih terkendala", "tinggi", "baru", "tidak jadi", "tidak aktif",
-        "belum dibantu", "belum dikerjakan",
+        "belum dibantu", "belum dikerjakan", "respon negatif", "tidak tertarik", "kendala budget",
     }
     success_values = {
         "selesai", "sudah mulai praktik", "berhasil ambil", "sudah diberi", "aktif",
+        "tertarik", "respon positif", "minta info lanjutan", "closing", "closing after sales",
     }
     warning_values = {
         "hari ini", "sedang ditangani", "sedang dikerjakan", "sedang dipertimbangkan",
         "cukup potensial", "sedang", "sudah ditawarkan", "butuh bantuan mentor",
+        "belum ada respon", "jadwalkan follow up lagi", "perlu follow up lagi", "belum dihubungi",
     }
     info_values = {
         "data baru", "sudah dihubungi", "sedang dipantau", "terjadwal", "sangat potensial",
