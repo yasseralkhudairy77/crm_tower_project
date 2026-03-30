@@ -28,6 +28,7 @@ FOLLOWUP_STATUS_OPTIONS = [
 FOLLOWUP_RESULT_OPTIONS = [
     "Belum Ada Respon",
     "Respon Positif",
+    "Respon Negatif",
     "Minta Info Lanjutan",
     "Jadwalkan Follow Up Lagi",
     "Kendala Budget",
@@ -35,6 +36,7 @@ FOLLOWUP_RESULT_OPTIONS = [
     "Closing",
 ]
 CONTACT_CHANNEL_OPTIONS = ["WhatsApp", "Telepon", "Email", "Manual"]
+NEGATIVE_FOLLOWUP_RESULTS = ("Respon Negatif", "Tidak Tertarik")
 FOLLOWUP_MESSAGE_TEMPLATES = {
     "Belum Dihubungi": (
         "Halo {name}, saya dari tim CRM. Terima kasih sudah membeli {product}. "
@@ -439,13 +441,16 @@ def list_followup_orders(
     params: list = []
     if sync_status:
         if sync_status == "Belum Di Follow Up":
-            query += " AND oof.followup_status = 'Belum Dihubungi'"
+            query += f" AND NOT ({_followed_up_sql_condition('oof')})"
         else:
             query += " AND oof.sync_status = ?"
             params.append(sync_status)
     if followup_status:
-        query += " AND oof.followup_status = ?"
-        params.append(followup_status)
+        if followup_status == "Belum Dihubungi":
+            query += f" AND NOT ({_followed_up_sql_condition('oof')})"
+        else:
+            query += " AND oof.followup_status = ?"
+            params.append(followup_status)
     if followup_result:
         query += " AND oof.followup_result = ?"
         params.append(followup_result)
@@ -591,8 +596,8 @@ def followup_kpi_dashboard(brand_name: str = "") -> dict:
             params_today,
         )["total"],
         "not_interested_today": fetchone(
-            f"SELECT COUNT(*) AS total FROM orderonline_followup_log{join_clause} WHERE substr(orderonline_followup_log.created_at,1,10) = ? AND outcome = 'Tidak Tertarik'{where_brand}",
-            params_today,
+            f"SELECT COUNT(*) AS total FROM orderonline_followup_log{join_clause} WHERE substr(orderonline_followup_log.created_at,1,10) = ? AND outcome IN ({','.join('?' for _ in NEGATIVE_FOLLOWUP_RESULTS)}){where_brand}",
+            (today, *NEGATIVE_FOLLOWUP_RESULTS, brand_name) if brand_name else (today, *NEGATIVE_FOLLOWUP_RESULTS),
         )["total"],
         "channel_breakdown": fetchall(
             """
@@ -1063,8 +1068,8 @@ def weekly_supervisor_dashboard(brand_name: str = "") -> dict:
             params,
         )["total"],
         "weekly_not_interested": fetchone(
-            f"SELECT COUNT(*) AS total FROM orderonline_followup_log l{join_clause} WHERE date(l.created_at) >= date('now','-6 day') AND outcome = 'Tidak Tertarik'{where_brand}",
-            params,
+            f"SELECT COUNT(*) AS total FROM orderonline_followup_log l{join_clause} WHERE date(l.created_at) >= date('now','-6 day') AND outcome IN ({','.join('?' for _ in NEGATIVE_FOLLOWUP_RESULTS)}){where_brand}",
+            (*NEGATIVE_FOLLOWUP_RESULTS, brand_name) if brand_name else NEGATIVE_FOLLOWUP_RESULTS,
         )["total"],
         "weekly_pic_breakdown": fetchall(
             """
