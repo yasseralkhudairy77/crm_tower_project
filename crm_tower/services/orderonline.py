@@ -506,6 +506,10 @@ def followup_summary(brand_name: str = "") -> dict:
             f"SELECT COUNT(*) AS total FROM orderonline_followup{where}{' AND' if where else ' WHERE'} ({followed_up_condition})",
             params,
         )["total"],
+        "closing": fetchone(
+            f"SELECT COUNT(*) AS total FROM orderonline_followup{where}{' AND' if where else ' WHERE'} followup_status = 'Closing After Sales'",
+            params,
+        )["total"],
     }
 
 
